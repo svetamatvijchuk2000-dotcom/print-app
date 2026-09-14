@@ -7,61 +7,264 @@
     <title>Расчёт заказов</title>
 
     <link rel="stylesheet" href="style.css">
-
     <link rel="manifest" href="manifest.json">
+
     <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 
 <body>
 
-    <header class="header">
-        <h1>Расчёт заказов</h1>
-        <p>Печать и сувенирная продукция</p>
-    </header>
+<header class="header">
+    <h1>Новый заказ</h1>
+    <p>Печать и сувенирная продукция</p>
+</header>
 
-    <main class="container">
 
-        <section class="card">
-            <h2>Новый заказ</h2>
+<main class="container">
 
-            <label>Изделие</label>
+    <!-- ДАННЫЕ ЗАКАЗА -->
 
-            <select id="product">
-                <option value="diploma_uv">Диплом УФ</option>
-                <option value="diploma_sublimation">Диплом сублимация</option>
-            </select>
+    <section class="card">
 
-            <label>Размер</label>
+        <h2>Данные заказа</h2>
 
-            <select id="size">
-                <option value="A5">А5</option>
-                <option value="A4">А4</option>
-                <option value="A3">А3</option>
-            </select>
+        <label for="clientName">Клиент</label>
 
-            <label>Количество</label>
+        <input
+            type="text"
+            id="clientName"
+            placeholder="Имя или название клиента"
+        >
 
-            <input
-                type="number"
-                id="quantity"
-                value="1"
-                min="1"
+    </section>
+
+
+    <!-- ПОЗИЦИИ -->
+
+    <section class="card">
+
+        <div class="section-title">
+
+            <h2>Позиции заказа</h2>
+
+            <button
+                type="button"
+                class="small-button"
+                onclick="addPosition()"
             >
-
-            <button onclick="calculate()">
-                Рассчитать
+                + Добавить позицию
             </button>
 
-            <div class="result">
-                <span>Стоимость:</span>
-                <strong id="total">0 грн</strong>
+        </div>
+
+
+        <div id="positions">
+
+            <!-- Первая позиция создаётся автоматически -->
+
+            <div class="position">
+
+                <div class="position-header">
+
+                    <strong>Позиция 1</strong>
+
+                    <button
+                        type="button"
+                        class="delete-button"
+                        onclick="removePosition(this)"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <label>Категория</label>
+
+                <select
+                    class="category"
+                    onchange="updateProductOptions(this)"
+                >
+
+                    <option value="">
+                        Выберите категорию
+                    </option>
+
+                    <option value="diploma">
+                        Дипломы
+                    </option>
+
+                    <option value="cup_ready">
+                        Готовые чашки
+                    </option>
+
+                    <option value="cup_print">
+                        Печать чашка
+                    </option>
+
+                    <option value="cup_custom">
+                        Чашка
+                    </option>
+
+                    <option value="packaging">
+                        Упаковка для чашки
+                    </option>
+
+                    <option value="designer">
+                        Услуги дизайнера
+                    </option>
+
+                    <option value="urgent">
+                        Срочность
+                    </option>
+
+                </select>
+
+
+                <div class="product-area"></div>
+
+
+                <div class="manual-fields"></div>
+
+
+                <div class="price-info">
+
+                    <div>
+                        <span>Цена продажи:</span>
+                        <strong class="sale-price">0 грн</strong>
+                    </div>
+
+                    <div>
+                        <span>Себестоимость:</span>
+                        <strong class="cost-price">0 грн</strong>
+                    </div>
+
+                    <div>
+                        <span>Прибыль:</span>
+                        <strong class="profit-price">0 грн</strong>
+                    </div>
+
+                </div>
+
             </div>
 
-        </section>
+        </div>
 
-    </main>
+    </section>
 
-    <script src="app.js"></script>
+
+    <!-- ИТОГО -->
+
+    <section class="card total-card">
+
+        <h2>Итого</h2>
+
+        <div class="total-row">
+
+            <span>Продажа</span>
+
+            <strong id="totalSale">
+                0 грн
+            </strong>
+
+        </div>
+
+
+        <div class="total-row">
+
+            <span>Себестоимость</span>
+
+            <strong id="totalCost">
+                0 грн
+            </strong>
+
+        </div>
+
+
+        <div class="total-row profit-row">
+
+            <span>Прибыль</span>
+
+            <strong id="totalProfit">
+                0 грн
+            </strong>
+
+        </div>
+
+    </section>
+
+
+    <!-- КНОПКИ -->
+
+    <section class="actions">
+
+        <button
+            type="button"
+            class="main-button"
+            onclick="saveOrder()"
+        >
+            Сохранить заказ
+        </button>
+
+
+        <button
+            type="button"
+            class="secondary-button"
+            onclick="clearOrder()"
+        >
+            Очистить
+        </button>
+
+    </section>
+
+</main>
+
+
+<!-- НИЖНЯЯ НАВИГАЦИЯ -->
+
+<nav class="bottom-nav">
+
+    <button
+        type="button"
+        class="nav-item active"
+    >
+        <span>🧮</span>
+        <small>Заказ</small>
+    </button>
+
+
+    <button
+        type="button"
+        class="nav-item"
+    >
+        <span>📦</span>
+        <small>Каталог</small>
+    </button>
+
+
+    <button
+        type="button"
+        class="nav-item"
+    >
+        <span>📋</span>
+        <small>Заказы</small>
+    </button>
+
+
+    <button
+        type="button"
+        class="nav-item"
+    >
+        <span>⚙️</span>
+        <small>Настройки</small>
+    </button>
+
+</nav>
+
+
+<script src="app.js"></script>
 
 </body>
 </html>
