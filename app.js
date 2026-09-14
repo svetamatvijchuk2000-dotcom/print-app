@@ -14850,3 +14850,2680 @@ document.addEventListener(
         );
     }
 );
+
+// ============================================================
+// КЛИЕНТЫ + КОМПАКТНАЯ СТРАНИЦА ЗАКАЗОВ
+//
+// 1. Убираем кнопку "Удалить" со страницы Заказы
+// 2. Добавляем отдельный раздел "Клиенты"
+// 3. Автоматически собираем клиентов из заказов
+// 4. Показываем статистику по клиенту
+// 5. Показываем историю его заказов
+// 6. Из карточки клиента можно открыть заказ
+// ============================================================
+
+
+
+// ============================================================
+// 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ КЛИЕНТОВ
+// ============================================================
+
+function clientNormalizeText(value) {
+
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+}
+
+
+function clientNormalizePhone(value) {
+
+    return String(value || "")
+        .replace(/[^\d]/g, "");
+}
+
+
+// ------------------------------------------------------------
+// Получаем чистое имя клиента.
+//
+// Если в старых заказах было:
+// "Сивюк Дарина | Инстаграм"
+//
+// в клиента попадёт:
+// "Сивюк Дарина"
+// ------------------------------------------------------------
+
+function getClientNameFromOrder(order) {
+
+    let name =
+        String(
+            order?.client ||
+            ""
+        ).trim();
+
+
+    if (!name) {
+        return "Без имени";
+    }
+
+
+    const parts =
+        name.split("|");
+
+
+    if (parts.length > 1) {
+
+        const possibleChannel =
+            String(
+                parts[
+                    parts.length - 1
+                ]
+            )
+            .trim()
+            .toLowerCase();
+
+
+        const channels = [
+            "instagram",
+            "инстаграм",
+            "сайт",
+            "telegram",
+            "телеграм",
+            "viber",
+            "вайбер",
+            "whatsapp",
+            "вотсап",
+            "другое"
+        ];
+
+
+        if (
+            channels.includes(
+                possibleChannel
+            )
+        ) {
+
+            parts.pop();
+
+            name =
+                parts
+                    .join("|")
+                    .trim();
+        }
+    }
+
+
+    return name ||
+        "Без имени";
+}
+
+
+// ------------------------------------------------------------
+// Уникальный ключ клиента
+//
+// Приоритет:
+// 1. Телефон
+// 2. ФИО
+// ------------------------------------------------------------
+
+function getClientKeyFromOrder(order) {
+
+    const phone =
+        clientNormalizePhone(
+            order?.clientPhone
+        );
+
+
+    if (phone) {
+
+        return `phone:${phone}`;
+    }
+
+
+    const name =
+        clientNormalizeText(
+            getClientNameFromOrder(
+                order
+            )
+        );
+
+
+    return `name:${name}`;
+}
+
+
+
+// ============================================================
+// 2. СОБИРАЕМ КЛИЕНТОВ ИЗ ЗАКАЗОВ
+// ============================================================
+
+function buildClientsFromOrders() {
+
+    const orders =
+        getOrders();
+
+
+    const clientsMap =
+        new Map();
+
+
+    orders.forEach(order => {
+
+        const key =
+            getClientKeyFromOrder(
+                order
+            );
+
+
+        if (
+            !clientsMap.has(key)
+        ) {
+
+            clientsMap.set(
+                key,
+                {
+                    key,
+
+                    name:
+                        getClientNameFromOrder(
+                            order
+                        ),
+
+                    phone:
+                        String(
+                            order.clientPhone ||
+                            ""
+                        ).trim(),
+
+                    salesChannels:
+                        new Set(),
+
+                    contactChannels:
+                        new Set(),
+
+                    orders: [],
+
+                    totalSale: 0,
+
+                    totalCost: 0,
+
+                    totalProfit: 0,
+
+                    paidOrders: 0,
+
+                    unpaidOrders: 0,
+
+                    completedOrders: 0
+                }
+            );
+        }
+
+
+        const client =
+            clientsMap.get(key);
+
+
+        // Если раньше телефона не было,
+        // но в новом заказе появился —
+        // добавляем.
+
+        if (
+            !client.phone &&
+            order.clientPhone
+        ) {
+
+            client.phone =
+                String(
+                    order.clientPhone
+                ).trim();
+        }
+
+
+        // Более свежее имя
+
+        const orderName =
+            getClientNameFromOrder(
+                order
+            );
+
+
+        if (
+            orderName &&
+            orderName !== "Без имени"
+        ) {
+
+            client.name =
+                orderName;
+        }
+
+
+        // Канал продажи
+
+        if (order.salesChannel) {
+
+            client.salesChannels.add(
+                String(
+                    order.salesChannel
+                ).trim()
+            );
+        }
+
+
+        // Канал связи
+
+        if (order.contactChannel) {
+
+            client.contactChannels.add(
+                String(
+                    order.contactChannel
+                ).trim()
+            );
+        }
+
+
+        client.orders.push(
+            order
+        );
+
+
+        client.totalSale +=
+            Number(
+                getOrderSale(order) ||
+                0
+            );
+
+
+        client.totalCost +=
+            Number(
+                getOrderCost(order) ||
+                0
+            );
+
+
+        client.totalProfit +=
+            Number(
+                getOrderProfit(order) ||
+                0
+            );
+
+
+        const payment =
+            String(
+                order.paymentStatus ||
+                ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        if (
+            payment === "оплачено"
+        ) {
+
+            client.paidOrders++;
+
+        } else if (
+            payment === "не оплачено"
+        ) {
+
+            client.unpaidOrders++;
+        }
+
+
+        const status =
+            String(
+                order.status ||
+                ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        if (
+            status === "завершён" ||
+            status === "завершен" ||
+            status === "выдан"
+        ) {
+
+            client.completedOrders++;
+        }
+    });
+
+
+    const clients =
+        Array.from(
+            clientsMap.values()
+        );
+
+
+    clients.forEach(client => {
+
+        client.orders.sort(
+            (a, b) =>
+                Number(
+                    b.createdAt ||
+                    b.id ||
+                    0
+                )
+                -
+                Number(
+                    a.createdAt ||
+                    a.id ||
+                    0
+                )
+        );
+
+
+        client.orderCount =
+            client.orders.length;
+
+
+        client.averageCheck =
+            client.orderCount
+                ? client.totalSale /
+                    client.orderCount
+                : 0;
+
+
+        const timestamps =
+            client.orders
+                .map(order =>
+                    Number(
+                        order.createdAt ||
+                        order.id ||
+                        0
+                    )
+                )
+                .filter(Boolean);
+
+
+        client.firstOrderDate =
+            timestamps.length
+                ? Math.min(
+                    ...timestamps
+                )
+                : null;
+
+
+        client.lastOrderDate =
+            timestamps.length
+                ? Math.max(
+                    ...timestamps
+                )
+                : null;
+
+
+        client.salesChannels =
+            Array.from(
+                client.salesChannels
+            );
+
+
+        client.contactChannels =
+            Array.from(
+                client.contactChannels
+            );
+    });
+
+
+    // По умолчанию:
+    // клиенты с последними заказами сверху
+
+    clients.sort(
+        (a, b) =>
+            Number(
+                b.lastOrderDate ||
+                0
+            )
+            -
+            Number(
+                a.lastOrderDate ||
+                0
+            )
+    );
+
+
+    return clients;
+}
+
+
+
+// ============================================================
+// 3. СОЗДАЁМ ЭКРАН "КЛИЕНТЫ"
+// ============================================================
+
+function ensureClientsScreen() {
+
+    if (
+        document.getElementById(
+            "screenClients"
+        )
+    ) {
+        return;
+    }
+
+
+    const screen =
+        document.createElement(
+            "section"
+        );
+
+
+    screen.id =
+        "screenClients";
+
+
+    screen.className =
+        "screen";
+
+
+    screen.innerHTML = `
+
+        <div class="screen-intro clients-screen-intro">
+
+            <h2>
+                Клиенты
+            </h2>
+
+            <p id="clientsCount">
+                0 клиентов
+            </p>
+
+        </div>
+
+
+        <div class="clients-controls">
+
+            <input
+                type="search"
+                id="clientsSearchInput"
+                placeholder="Поиск по имени или телефону"
+                autocomplete="off"
+            >
+
+
+            <select
+                id="clientsSort"
+            >
+
+                <option value="recent">
+                    Последние
+                </option>
+
+                <option value="orders">
+                    Больше заказов
+                </option>
+
+                <option value="sale">
+                    По сумме покупок
+                </option>
+
+                <option value="profit">
+                    По прибыли
+                </option>
+
+                <option value="name">
+                    По имени
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div id="clientsList"></div>
+    `;
+
+
+    const main =
+        document.querySelector(
+            ".app-main"
+        );
+
+
+    if (!main) {
+        return;
+    }
+
+
+    const settings =
+        document.getElementById(
+            "screenSettings"
+        );
+
+
+    if (settings) {
+
+        settings.insertAdjacentElement(
+            "beforebegin",
+            screen
+        );
+
+    } else {
+
+        main.appendChild(
+            screen
+        );
+    }
+
+
+    const search =
+        screen.querySelector(
+            "#clientsSearchInput"
+        );
+
+
+    const sort =
+        screen.querySelector(
+            "#clientsSort"
+        );
+
+
+    search?.addEventListener(
+        "input",
+        renderClients
+    );
+
+
+    sort?.addEventListener(
+        "change",
+        renderClients
+    );
+}
+
+
+
+// ============================================================
+// 4. КНОПКА "КЛИЕНТЫ" В НИЖНЕМ МЕНЮ
+// ============================================================
+
+function ensureClientsNavigation() {
+
+    // --------------------------------------------------------
+    // Обычная нижняя навигация из index.html
+    // --------------------------------------------------------
+
+    document
+        .querySelectorAll(
+            ".bottom-nav"
+        )
+        .forEach(nav => {
+
+            if (
+                nav.querySelector(
+                    ".clients-nav-item"
+                )
+            ) {
+                return;
+            }
+
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "nav-item clients-nav-item";
+
+
+            button.dataset.nav =
+                "Клиенты";
+
+
+            button.dataset.screen =
+                "clients";
+
+
+            button.innerHTML = `
+
+                <span>👤</span>
+
+                <small>
+                    Клиенты
+                </small>
+
+            `;
+
+
+            button.addEventListener(
+                "click",
+                showClients
+            );
+
+
+            // Ставим Клиенты после Заказы
+
+            const ordersButton =
+                nav.querySelector(
+                    '[data-screen="orders"]'
+                );
+
+
+            if (ordersButton) {
+
+                ordersButton
+                    .insertAdjacentElement(
+                        "afterend",
+                        button
+                    );
+
+            } else {
+
+                nav.appendChild(
+                    button
+                );
+            }
+        });
+
+
+    // --------------------------------------------------------
+    // Дополнительная навигация,
+    // которая уже используется приложением
+    // --------------------------------------------------------
+
+    document
+        .querySelectorAll(
+            ".extra-bottom-nav"
+        )
+        .forEach(nav => {
+
+            if (
+                nav.querySelector(
+                    ".clients-extra-nav-item"
+                )
+            ) {
+                return;
+            }
+
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "extra-nav-item clients-extra-nav-item";
+
+
+            button.dataset.nav =
+                "Клиенты";
+
+
+            button.innerHTML = `
+
+                👤
+
+                <span>
+                    Клиенты
+                </span>
+
+            `;
+
+
+            button.addEventListener(
+                "click",
+                showClients
+            );
+
+
+            const ordersButton =
+                nav.querySelector(
+                    '[data-nav="Заказы"]'
+                );
+
+
+            if (ordersButton) {
+
+                ordersButton
+                    .insertAdjacentElement(
+                        "afterend",
+                        button
+                    );
+
+            } else {
+
+                nav.appendChild(
+                    button
+                );
+            }
+        });
+}
+
+
+
+// ============================================================
+// 5. ОТКРЫВАЕМ СТРАНИЦУ "КЛИЕНТЫ"
+// ============================================================
+
+function showClients() {
+
+    ensureClientsScreen();
+
+    ensureClientsNavigation();
+
+
+    hideAllScreens();
+
+
+    const screen =
+        document.getElementById(
+            "screenClients"
+        );
+
+
+    if (!screen) {
+        return;
+    }
+
+
+    screen.classList.add(
+        "active"
+    );
+
+
+    const title =
+        document.getElementById(
+            "pageTitle"
+        );
+
+
+    const subtitle =
+        document.getElementById(
+            "pageSubtitle"
+        );
+
+
+    if (title) {
+
+        title.textContent =
+            "Клиенты";
+    }
+
+
+    if (subtitle) {
+
+        subtitle.textContent =
+            "История и статистика клиентов";
+    }
+
+
+    // Снимаем active со всех кнопок
+
+    document
+        .querySelectorAll(
+            ".bottom-nav .nav-item, .extra-nav-item"
+        )
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.nav ===
+                    "Клиенты" ||
+                button.classList.contains(
+                    "clients-nav-item"
+                )
+            );
+        });
+
+
+    renderClients();
+}
+
+
+
+// ============================================================
+// 6. РИСУЕМ СПИСОК КЛИЕНТОВ
+// ============================================================
+
+function renderClients() {
+
+    ensureClientsScreen();
+
+
+    const container =
+        document.getElementById(
+            "clientsList"
+        );
+
+
+    const count =
+        document.getElementById(
+            "clientsCount"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    let clients =
+        buildClientsFromOrders();
+
+
+    const search =
+        clientNormalizeText(
+            document.getElementById(
+                "clientsSearchInput"
+            )?.value
+        );
+
+
+    if (search) {
+
+        const searchPhone =
+            clientNormalizePhone(
+                search
+            );
+
+
+        clients =
+            clients.filter(client => {
+
+                const name =
+                    clientNormalizeText(
+                        client.name
+                    );
+
+
+                const phone =
+                    clientNormalizePhone(
+                        client.phone
+                    );
+
+
+                return (
+                    name.includes(
+                        search
+                    )
+                    ||
+                    (
+                        searchPhone &&
+                        phone.includes(
+                            searchPhone
+                        )
+                    )
+                );
+            });
+    }
+
+
+    const sort =
+        document.getElementById(
+            "clientsSort"
+        )?.value ||
+        "recent";
+
+
+    clients.sort(
+        (a, b) => {
+
+            if (
+                sort === "orders"
+            ) {
+
+                return (
+                    b.orderCount -
+                    a.orderCount
+                );
+            }
+
+
+            if (
+                sort === "sale"
+            ) {
+
+                return (
+                    b.totalSale -
+                    a.totalSale
+                );
+            }
+
+
+            if (
+                sort === "profit"
+            ) {
+
+                return (
+                    b.totalProfit -
+                    a.totalProfit
+                );
+            }
+
+
+            if (
+                sort === "name"
+            ) {
+
+                return String(
+                    a.name
+                ).localeCompare(
+                    String(
+                        b.name
+                    ),
+                    "uk"
+                );
+            }
+
+
+            return (
+                Number(
+                    b.lastOrderDate ||
+                    0
+                )
+                -
+                Number(
+                    a.lastOrderDate ||
+                    0
+                )
+            );
+        }
+    );
+
+
+    if (count) {
+
+        count.textContent =
+            `Всего клиентов: ${clients.length}`;
+    }
+
+
+    if (!clients.length) {
+
+        container.innerHTML = `
+
+            <div class="clients-empty">
+
+                <div class="clients-empty-icon">
+                    👤
+                </div>
+
+                <strong>
+                    Клиентов пока нет
+                </strong>
+
+                <p>
+                    Клиенты появятся автоматически
+                    после сохранения заказов.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        clients
+            .map(client => {
+
+                const encodedKey =
+                    encodeURIComponent(
+                        client.key
+                    );
+
+
+                const lastDate =
+                    client.lastOrderDate
+                        ? new Date(
+                            client.lastOrderDate
+                        )
+                        .toLocaleDateString(
+                            "uk-UA"
+                        )
+                        : "—";
+
+
+                const contact =
+                    client.phone
+                        ? escapeHtml(
+                            client.phone
+                        )
+                        : (
+                            client.contactChannels[
+                                0
+                            ] ||
+                            ""
+                        );
+
+
+                return `
+
+                    <button
+                        type="button"
+                        class="client-card"
+                        onclick="
+                            openClientCard(
+                                '${encodedKey}'
+                            )
+                        "
+                    >
+
+                        <div class="client-card-top">
+
+                            <div>
+
+                                <div class="client-card-name">
+                                    ${escapeHtml(
+                                        client.name
+                                    )}
+                                </div>
+
+                                ${
+                                    contact
+                                        ? `
+                                            <div class="client-card-contact">
+                                                ${escapeHtml(
+                                                    contact
+                                                )}
+                                            </div>
+                                        `
+                                        : ""
+                                }
+
+                            </div>
+
+
+                            <div class="client-card-arrow">
+                                ›
+                            </div>
+
+                        </div>
+
+
+                        <div class="client-card-stats">
+
+                            <div>
+
+                                <span>
+                                    Заказов
+                                </span>
+
+                                <strong>
+                                    ${client.orderCount}
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    На сумму
+                                </span>
+
+                                <strong>
+                                    ${formatMoney(
+                                        client.totalSale
+                                    )} грн
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    Прибыль
+                                </span>
+
+                                <strong>
+                                    ${formatMoney(
+                                        client.totalProfit
+                                    )} грн
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="client-card-last-order">
+
+                            Последний заказ:
+                            <b>
+                                ${lastDate}
+                            </b>
+
+                        </div>
+
+                    </button>
+                `;
+            })
+            .join("");
+}
+
+
+
+// ============================================================
+// 7. МОДАЛЬНОЕ ОКНО КЛИЕНТА
+// ============================================================
+
+function ensureClientModal() {
+
+    if (
+        document.getElementById(
+            "clientDetailsModal"
+        )
+    ) {
+        return;
+    }
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.id =
+        "clientDetailsModal";
+
+
+    modal.className =
+        "client-details-modal";
+
+
+    modal.innerHTML = `
+
+        <div
+            class="client-details-overlay"
+            onclick="closeClientCard()"
+        ></div>
+
+
+        <div class="client-details-window">
+
+            <div class="client-details-header">
+
+                <div>
+
+                    <div class="client-details-header-small">
+                        Клиент
+                    </div>
+
+                    <h2 id="clientDetailsTitle">
+                        Клиент
+                    </h2>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="client-details-close"
+                    onclick="closeClientCard()"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div
+                id="clientDetailsContent"
+                class="client-details-content"
+            ></div>
+
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+}
+
+
+
+// ============================================================
+// 8. ОТКРЫВАЕМ КАРТОЧКУ КЛИЕНТА
+// ============================================================
+
+function openClientCard(encodedKey) {
+
+    ensureClientModal();
+
+
+    const key =
+        decodeURIComponent(
+            encodedKey
+        );
+
+
+    const client =
+        buildClientsFromOrders()
+            .find(
+                item =>
+                    item.key === key
+            );
+
+
+    if (!client) {
+
+        alert(
+            "Клиент не найден."
+        );
+
+        return;
+    }
+
+
+    const modal =
+        document.getElementById(
+            "clientDetailsModal"
+        );
+
+
+    const title =
+        document.getElementById(
+            "clientDetailsTitle"
+        );
+
+
+    const content =
+        document.getElementById(
+            "clientDetailsContent"
+        );
+
+
+    if (
+        !modal ||
+        !content
+    ) {
+        return;
+    }
+
+
+    if (title) {
+
+        title.textContent =
+            client.name;
+    }
+
+
+    const firstDate =
+        client.firstOrderDate
+            ? new Date(
+                client.firstOrderDate
+            )
+            .toLocaleDateString(
+                "uk-UA"
+            )
+            : "—";
+
+
+    const lastDate =
+        client.lastOrderDate
+            ? new Date(
+                client.lastOrderDate
+            )
+            .toLocaleDateString(
+                "uk-UA"
+            )
+            : "—";
+
+
+    const saleChannels =
+        client.salesChannels.length
+            ? client.salesChannels
+                .join(", ")
+            : "—";
+
+
+    const contactChannels =
+        client.contactChannels.length
+            ? client.contactChannels
+                .join(", ")
+            : "—";
+
+
+    content.innerHTML = `
+
+        <!-- КОНТАКТ -->
+
+        <div class="client-profile-card">
+
+            ${
+                client.phone
+                    ? `
+                        <div class="client-profile-line">
+
+                            <span>
+                                Телефон
+                            </span>
+
+                            <strong>
+                                ${escapeHtml(
+                                    client.phone
+                                )}
+                            </strong>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Канал продажи
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        saleChannels
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Канал связи
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        contactChannels
+                    )}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ОСНОВНАЯ СТАТИСТИКА -->
+
+        <div class="client-big-stats">
+
+            <div>
+
+                <span>
+                    Заказов
+                </span>
+
+                <strong>
+                    ${client.orderCount}
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Продажи
+                </span>
+
+                <strong>
+                    ${formatMoney(
+                        client.totalSale
+                    )} грн
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Прибыль
+                </span>
+
+                <strong>
+                    ${formatMoney(
+                        client.totalProfit
+                    )} грн
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Средний чек
+                </span>
+
+                <strong>
+                    ${formatMoney(
+                        client.averageCheck
+                    )} грн
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ДОПОЛНИТЕЛЬНАЯ СТАТИСТИКА -->
+
+        <div class="client-profile-card">
+
+            <div class="client-profile-line">
+
+                <span>
+                    Себестоимость
+                </span>
+
+                <strong>
+                    ${formatMoney(
+                        client.totalCost
+                    )} грн
+                </strong>
+
+            </div>
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Завершено заказов
+                </span>
+
+                <strong>
+                    ${client.completedOrders}
+                </strong>
+
+            </div>
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Оплачено заказов
+                </span>
+
+                <strong>
+                    ${client.paidOrders}
+                </strong>
+
+            </div>
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Не оплачено
+                </span>
+
+                <strong>
+                    ${client.unpaidOrders}
+                </strong>
+
+            </div>
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Первый заказ
+                </span>
+
+                <strong>
+                    ${firstDate}
+                </strong>
+
+            </div>
+
+
+            <div class="client-profile-line">
+
+                <span>
+                    Последний заказ
+                </span>
+
+                <strong>
+                    ${lastDate}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ИСТОРИЯ -->
+
+        <div class="client-orders-title">
+
+            История заказов
+
+            <span>
+                ${client.orderCount}
+            </span>
+
+        </div>
+
+
+        <div class="client-orders-history">
+
+            ${client.orders
+                .map(
+                    order =>
+                        renderClientOrderRow(
+                            order
+                        )
+                )
+                .join("")
+            }
+
+        </div>
+    `;
+
+
+    modal.classList.add(
+        "active"
+    );
+
+
+    document.body.classList.add(
+        "client-modal-open"
+    );
+}
+
+
+
+// ============================================================
+// 9. СТРОКА ЗАКАЗА В ИСТОРИИ КЛИЕНТА
+// ============================================================
+
+function renderClientOrderRow(order) {
+
+    const number =
+        order.number ||
+        "—";
+
+
+    const sale =
+        Number(
+            getOrderSale(order) ||
+            0
+        );
+
+
+    const status =
+        String(
+            order.status ||
+            "Новый"
+        );
+
+
+    const timestamp =
+        Number(
+            order.createdAt ||
+            order.id ||
+            0
+        );
+
+
+    const date =
+        timestamp
+            ? new Date(
+                timestamp
+            )
+            .toLocaleDateString(
+                "uk-UA"
+            )
+            : "—";
+
+
+    return `
+
+        <button
+            type="button"
+            class="client-order-row"
+            onclick="
+                openOrderFromClient(
+                    ${Number(order.id)}
+                )
+            "
+        >
+
+            <div>
+
+                <strong>
+                    Заказ №${escapeHtml(
+                        number
+                    )}
+                </strong>
+
+                <span>
+                    ${date}
+                </span>
+
+            </div>
+
+
+            <div class="client-order-row-right">
+
+                <strong>
+                    ${formatMoney(
+                        sale
+                    )} грн
+                </strong>
+
+                <span>
+                    ${escapeHtml(
+                        status
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="client-order-chevron">
+                ›
+            </div>
+
+        </button>
+    `;
+}
+
+
+
+// ============================================================
+// 10. ИЗ КЛИЕНТА ОТКРЫВАЕМ ЗАКАЗ
+// ============================================================
+
+function openOrderFromClient(orderId) {
+
+    closeClientCard();
+
+
+    setTimeout(
+        () => {
+
+            openOrderDetails(
+                orderId
+            );
+
+        },
+        100
+    );
+}
+
+
+
+// ============================================================
+// 11. ЗАКРЫВАЕМ КАРТОЧКУ КЛИЕНТА
+// ============================================================
+
+function closeClientCard() {
+
+    const modal =
+        document.getElementById(
+            "clientDetailsModal"
+        );
+
+
+    if (modal) {
+
+        modal.classList.remove(
+            "active"
+        );
+    }
+
+
+    document.body.classList.remove(
+        "client-modal-open"
+    );
+}
+
+
+
+// ============================================================
+// 12. ОБНОВЛЯЕМ КЛИЕНТОВ ПОСЛЕ СОХРАНЕНИЯ ЗАКАЗА
+// ============================================================
+
+function refreshClientsIfOpen() {
+
+    const screen =
+        document.getElementById(
+            "screenClients"
+        );
+
+
+    if (
+        screen &&
+        screen.classList.contains(
+            "active"
+        )
+    ) {
+
+        renderClients();
+    }
+}
+
+
+
+// ============================================================
+// 13. УБИРАЕМ КНОПКУ "УДАЛИТЬ"
+// ТОЛЬКО ИЗ СПИСКА ЗАКАЗОВ
+// ============================================================
+
+function hideDeleteButtonsFromOrdersList() {
+
+    document
+        .querySelectorAll(
+            "#ordersList .order-card-actions > button"
+        )
+        .forEach(button => {
+
+            const onclick =
+                button.getAttribute(
+                    "onclick"
+                ) || "";
+
+
+            const text =
+                String(
+                    button.textContent ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+
+            if (
+                onclick.includes(
+                    "deleteOrder"
+                )
+                ||
+                text === "удалить"
+            ) {
+
+                button.style.display =
+                    "none";
+            }
+        });
+}
+
+
+
+// ============================================================
+// 14. ПОСЛЕ ПЕРЕРИСОВКИ ЗАКАЗОВ
+// СНОВА ПРЯЧЕМ УДАЛЕНИЕ
+// ============================================================
+
+const _renderOrderCardsClientsUpdate =
+    renderOrderCards;
+
+
+renderOrderCards = function () {
+
+    _renderOrderCardsClientsUpdate();
+
+
+    setTimeout(
+        () => {
+
+            hideDeleteButtonsFromOrdersList();
+
+            refreshClientsIfOpen();
+
+        },
+        0
+    );
+};
+
+
+
+// ============================================================
+// 15. СТИЛИ
+// ============================================================
+
+function addClientsStyles() {
+
+    if (
+        document.getElementById(
+            "clientsFeatureStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "clientsFeatureStyles";
+
+
+    style.textContent = `
+
+        /* ==================================================
+           УБИРАЕМ DELETE ИЗ КАРТОЧКИ ЗАКАЗА
+        ================================================== */
+
+        #ordersList
+        .order-card-actions
+        > button {
+
+            display: none !important;
+        }
+
+
+        /* Статус занимает нормальную ширину */
+
+        #ordersList
+        .order-card-actions {
+
+            display: block !important;
+        }
+
+
+        #ordersList
+        .order-card-actions
+        select {
+
+            width: 100%;
+
+            box-sizing: border-box;
+        }
+
+
+
+        /* ==================================================
+           КЛИЕНТЫ — ФИЛЬТРЫ
+        ================================================== */
+
+        .clients-controls {
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                auto;
+
+            gap: 8px;
+
+            margin-bottom: 14px;
+        }
+
+
+        .clients-controls input,
+        .clients-controls select {
+
+            min-width: 0;
+
+            height: 42px;
+
+            box-sizing: border-box;
+
+            padding: 0 10px;
+
+            border: 1px solid #d8dbe1;
+
+            border-radius: 11px;
+
+            background: #fff;
+
+            font-size: 14px;
+
+            color: #161b26;
+        }
+
+
+        .clients-controls select {
+
+            max-width: 145px;
+        }
+
+
+
+        /* ==================================================
+           КАРТОЧКА КЛИЕНТА
+        ================================================== */
+
+        .client-card {
+
+            display: block;
+
+            width: 100%;
+
+            margin: 0 0 10px;
+
+            padding: 14px;
+
+            border: 0;
+
+            border-radius: 17px;
+
+            background: #fff;
+
+            box-shadow:
+                0 2px 12px
+                rgba(17, 24, 39, .06);
+
+            text-align: left;
+
+            color: inherit;
+
+            font-family: inherit;
+
+            cursor: pointer;
+        }
+
+
+        .client-card-top {
+
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 12px;
+
+            margin-bottom: 13px;
+        }
+
+
+        .client-card-name {
+
+            font-size: 17px;
+
+            line-height: 1.25;
+
+            font-weight: 750;
+
+            color: #111827;
+        }
+
+
+        .client-card-contact {
+
+            margin-top: 4px;
+
+            font-size: 12px;
+
+            color: #747b87;
+        }
+
+
+        .client-card-arrow {
+
+            flex: 0 0 auto;
+
+            font-size: 28px;
+
+            line-height: 24px;
+
+            color: #9ca3af;
+        }
+
+
+
+        /* ==================================================
+           МАЛЕНЬКАЯ СТАТИСТИКА НА КАРТОЧКЕ
+        ================================================== */
+
+        .client-card-stats {
+
+            display: grid;
+
+            grid-template-columns:
+                .7fr
+                1.25fr
+                1.1fr;
+
+            gap: 7px;
+        }
+
+
+        .client-card-stats > div {
+
+            min-width: 0;
+
+            padding: 9px;
+
+            border-radius: 11px;
+
+            background: #f6f7f9;
+        }
+
+
+        .client-card-stats span {
+
+            display: block;
+
+            margin-bottom: 3px;
+
+            font-size: 10px;
+
+            color: #7c828d;
+        }
+
+
+        .client-card-stats strong {
+
+            display: block;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+
+            font-size: 13px;
+
+            color: #171b24;
+        }
+
+
+        .client-card-last-order {
+
+            margin-top: 10px;
+
+            font-size: 11px;
+
+            color: #8b9099;
+        }
+
+
+        .client-card-last-order b {
+
+            color: #626873;
+        }
+
+
+
+        /* ==================================================
+           ПУСТОЙ СПИСОК
+        ================================================== */
+
+        .clients-empty {
+
+            padding: 40px 20px;
+
+            text-align: center;
+
+            color: #737984;
+        }
+
+
+        .clients-empty-icon {
+
+            margin-bottom: 8px;
+
+            font-size: 40px;
+        }
+
+
+        .clients-empty p {
+
+            margin: 6px 0 0;
+
+            font-size: 13px;
+        }
+
+
+
+        /* ==================================================
+           МОДАЛЬНОЕ ОКНО КЛИЕНТА
+        ================================================== */
+
+        .client-details-modal {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 9999;
+
+            display: none;
+        }
+
+
+        .client-details-modal.active {
+
+            display: block;
+        }
+
+
+        .client-details-overlay {
+
+            position: absolute;
+
+            inset: 0;
+
+            background:
+                rgba(18, 24, 33, .35);
+
+            backdrop-filter:
+                blur(3px);
+
+            -webkit-backdrop-filter:
+                blur(3px);
+        }
+
+
+        .client-details-window {
+
+            position: absolute;
+
+            left: 0;
+
+            right: 0;
+
+            bottom: 0;
+
+            max-height:
+                calc(
+                    92vh -
+                    env(safe-area-inset-top)
+                );
+
+            overflow-y: auto;
+
+            overscroll-behavior: contain;
+
+            padding:
+                17px
+                15px
+                calc(
+                    28px +
+                    env(safe-area-inset-bottom)
+                );
+
+            border-radius:
+                24px
+                24px
+                0
+                0;
+
+            background: #f5f6f8;
+
+            box-sizing: border-box;
+
+            box-shadow:
+                0 -10px 40px
+                rgba(0, 0, 0, .12);
+        }
+
+
+        body.client-modal-open {
+
+            overflow: hidden;
+        }
+
+
+
+        /* ==================================================
+           ШАПКА КЛИЕНТА
+        ================================================== */
+
+        .client-details-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            gap: 12px;
+
+            margin-bottom: 14px;
+        }
+
+
+        .client-details-header h2 {
+
+            margin: 2px 0 0;
+
+            font-size: 22px;
+
+            line-height: 1.2;
+        }
+
+
+        .client-details-header-small {
+
+            font-size: 11px;
+
+            color: #9197a1;
+
+            text-transform: uppercase;
+
+            letter-spacing: .05em;
+        }
+
+
+        .client-details-close {
+
+            width: 38px;
+
+            height: 38px;
+
+            flex: 0 0 38px;
+
+            padding: 0;
+
+            border: 0;
+
+            border-radius: 50%;
+
+            background: #e5e7eb;
+
+            color: #212631;
+
+            font-size: 25px;
+
+            line-height: 38px;
+        }
+
+
+
+        /* ==================================================
+           ОБЩИЕ БЛОКИ
+        ================================================== */
+
+        .client-profile-card {
+
+            margin-bottom: 10px;
+
+            padding: 12px 14px;
+
+            border-radius: 15px;
+
+            background: #fff;
+
+            box-shadow:
+                0 1px 8px
+                rgba(17, 24, 39, .04);
+        }
+
+
+        .client-profile-line {
+
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            padding: 7px 0;
+
+            border-bottom:
+                1px solid
+                #f0f1f3;
+
+            font-size: 13px;
+        }
+
+
+        .client-profile-line:last-child {
+
+            border-bottom: 0;
+        }
+
+
+        .client-profile-line span {
+
+            color: #777d87;
+        }
+
+
+        .client-profile-line strong {
+
+            max-width: 58%;
+
+            text-align: right;
+
+            color: #171b24;
+        }
+
+
+
+        /* ==================================================
+           БОЛЬШАЯ СТАТИСТИКА
+        ================================================== */
+
+        .client-big-stats {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            gap: 8px;
+
+            margin-bottom: 10px;
+        }
+
+
+        .client-big-stats > div {
+
+            padding: 13px;
+
+            border-radius: 15px;
+
+            background: #fff;
+
+            box-shadow:
+                0 1px 8px
+                rgba(17, 24, 39, .04);
+        }
+
+
+        .client-big-stats span {
+
+            display: block;
+
+            margin-bottom: 5px;
+
+            font-size: 11px;
+
+            color: #828894;
+        }
+
+
+        .client-big-stats strong {
+
+            display: block;
+
+            font-size: 18px;
+
+            line-height: 1.2;
+
+            color: #151922;
+        }
+
+
+
+        /* ==================================================
+           ИСТОРИЯ ЗАКАЗОВ
+        ================================================== */
+
+        .client-orders-title {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            margin:
+                18px
+                3px
+                8px;
+
+            font-size: 16px;
+
+            font-weight: 750;
+
+            color: #181c25;
+        }
+
+
+        .client-orders-title span {
+
+            min-width: 25px;
+
+            padding: 3px 7px;
+
+            border-radius: 20px;
+
+            background: #e7e9ed;
+
+            text-align: center;
+
+            font-size: 11px;
+        }
+
+
+        .client-orders-history {
+
+            overflow: hidden;
+
+            border-radius: 15px;
+
+            background: #fff;
+        }
+
+
+        .client-order-row {
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                auto
+                16px;
+
+            gap: 10px;
+
+            align-items: center;
+
+            width: 100%;
+
+            padding: 12px 13px;
+
+            border: 0;
+
+            border-bottom:
+                1px solid
+                #eef0f2;
+
+            background: transparent;
+
+            text-align: left;
+
+            font-family: inherit;
+
+            color: inherit;
+        }
+
+
+        .client-order-row:last-child {
+
+            border-bottom: 0;
+        }
+
+
+        .client-order-row > div:first-child {
+
+            min-width: 0;
+        }
+
+
+        .client-order-row strong {
+
+            display: block;
+
+            font-size: 13px;
+
+            color: #171b24;
+        }
+
+
+        .client-order-row span {
+
+            display: block;
+
+            margin-top: 3px;
+
+            font-size: 11px;
+
+            color: #858b95;
+        }
+
+
+        .client-order-row-right {
+
+            text-align: right;
+        }
+
+
+        .client-order-row-right strong {
+
+            white-space: nowrap;
+        }
+
+
+        .client-order-chevron {
+
+            font-size: 22px;
+
+            color: #a3a7ae;
+        }
+
+
+
+        /* ==================================================
+           НИЖНЕЕ МЕНЮ
+        ================================================== */
+
+        .bottom-nav {
+
+            overflow-x: auto;
+        }
+
+
+        .bottom-nav .nav-item {
+
+            min-width: 56px;
+        }
+
+
+        .extra-bottom-nav {
+
+            overflow-x: auto;
+        }
+
+
+        .extra-bottom-nav
+        .extra-nav-item {
+
+            min-width: 55px;
+        }
+
+
+
+        @media
+        (max-width: 380px) {
+
+            .clients-controls {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .clients-controls select {
+
+                max-width: none;
+
+                width: 100%;
+            }
+
+
+            .client-card-stats {
+
+                grid-template-columns:
+                    repeat(
+                        3,
+                        minmax(0, 1fr)
+                    );
+            }
+
+
+            .client-card-stats > div {
+
+                padding: 7px;
+            }
+
+
+            .client-card-stats strong {
+
+                font-size: 11px;
+            }
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+
+// ============================================================
+// 16. НАБЛЮДАТЕЛЬ
+//
+// Некоторые части навигации создаются динамически,
+// поэтому проверяем появление меню.
+// ============================================================
+
+const clientsFeatureObserver =
+    new MutationObserver(
+        () => {
+
+            ensureClientsNavigation();
+
+            hideDeleteButtonsFromOrdersList();
+        }
+    );
+
+
+
+// ============================================================
+// 17. ЗАПУСК
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addClientsStyles();
+
+        ensureClientsScreen();
+
+        ensureClientsNavigation();
+
+        ensureClientModal();
+
+        hideDeleteButtonsFromOrdersList();
+
+
+        clientsFeatureObserver.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
+);
