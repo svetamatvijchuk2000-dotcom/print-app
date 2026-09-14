@@ -1654,11 +1654,586 @@ document.addEventListener(
     "DOMContentLoaded",
     () => {
 
+        // ===============================
+// СОЗДАНИЕ ПОЗИЦИЙ
+// ===============================
+
+function setupPosition(position) {
+
+    if (!position) return;
+
+    const category = position.querySelector(".category");
+
+    if (!category) return;
+
+    // Выбор категории
+    category.addEventListener("change", () => {
+        renderPositionFields(position);
+        calculatePosition(position);
+    });
+
+    // Если категория уже выбрана
+    renderPositionFields(position);
+}
+
+
+// ===============================
+// ПОЛЯ ПОЗИЦИИ
+// ===============================
+
+function renderPositionFields(position) {
+
+    const category =
+        position.querySelector(".category")?.value || "";
+
+    if (!category) return;
+
+    // Удаляем старые динамические поля
+    let fields =
+        position.querySelector(".dynamicFields");
+
+    if (!fields) {
+
+        fields =
+            document.createElement("div");
+
+        fields.className = "dynamicFields";
+
+        position.appendChild(fields);
+    }
+
+    let html = "";
+
+    // ===========================
+    // ДИПЛОМЫ
+    // ===========================
+
+    if (category === "diplomas") {
+
+        html = `
+
+            <label>
+                Диплом
+
+                <select class="product">
+
+                    <option value="">
+                        Выберите диплом
+                    </option>
+
+                    ${Object.keys(catalog.diplomas)
+                        .map(product => `
+                            <option value="${escapeHtml(product)}">
+                                ${escapeHtml(product)}
+                            </option>
+                        `)
+                        .join("")}
+
+                </select>
+
+            </label>
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <div class="manualPriceBlock">
+
+                <label>
+                    Своя цена продажи
+                    <input
+                        type="number"
+                        class="manualSale"
+                        min="0"
+                        placeholder="Авто"
+                    >
+                </label>
+
+                <label>
+                    Своя себестоимость
+                    <input
+                        type="number"
+                        class="manualCost"
+                        min="0"
+                        placeholder="Авто"
+                    >
+                </label>
+
+            </div>
+        `;
+    }
+
+    // ===========================
+    // ГОТОВЫЕ ЧАШКИ
+    // ===========================
+
+    else if (category === "readyCups") {
+
+        html = `
+
+            <label>
+                Чашка
+
+                <select class="product">
+
+                    <option value="">
+                        Выберите чашку
+                    </option>
+
+                    ${Object.keys(catalog.readyCups)
+                        .map(product => `
+                            <option value="${escapeHtml(product)}">
+                                ${escapeHtml(product)}
+                            </option>
+                        `)
+                        .join("")}
+
+                </select>
+
+            </label>
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <div class="manualPriceBlock">
+
+                <label>
+                    Своя цена
+                    <input
+                        type="number"
+                        class="manualSale"
+                        min="0"
+                        placeholder="Авто"
+                    >
+                </label>
+
+            </div>
+        `;
+    }
+
+    // ===========================
+    // ПЕЧАТЬ ЧАШКИ
+    // ===========================
+
+    else if (category === "cupPrint") {
+
+        html = `
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <label>
+                Цена печати за 1 шт.
+
+                <input
+                    type="number"
+                    class="salePrice"
+                    min="0"
+                    placeholder="Введите сумму"
+                >
+
+            </label>
+        `;
+    }
+
+    // ===========================
+    // ОБЫЧНАЯ ЧАШКА
+    // ===========================
+
+    else if (category === "cup") {
+
+        html = `
+
+            <label>
+                Описание
+
+                <input
+                    type="text"
+                    class="description"
+                    placeholder="Например: чашка 300 мл"
+                >
+
+            </label>
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <label>
+                Цена продажи за 1 шт.
+
+                <input
+                    type="number"
+                    class="salePrice"
+                    min="0"
+                    placeholder="Цена"
+                >
+
+            </label>
+
+            <label>
+                Себестоимость за 1 шт.
+
+                <input
+                    type="number"
+                    class="costPrice"
+                    min="0"
+                    placeholder="Себестоимость"
+                >
+
+            </label>
+        `;
+    }
+
+    // ===========================
+    // УПАКОВКА
+    // ===========================
+
+    else if (category === "packaging") {
+
+        html = `
+
+            <label>
+                Описание
+
+                <input
+                    type="text"
+                    class="description"
+                    placeholder="Например: коробка для чашки"
+                >
+
+            </label>
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <label>
+                Цена продажи за 1 шт.
+
+                <input
+                    type="number"
+                    class="salePrice"
+                    min="0"
+                    placeholder="Цена"
+                >
+
+            </label>
+
+            <label>
+                Себестоимость за 1 шт.
+
+                <input
+                    type="number"
+                    class="costPrice"
+                    min="0"
+                    placeholder="Себестоимость"
+                >
+
+            </label>
+        `;
+    }
+
+    // ===========================
+    // ДИЗАЙНЕР
+    // ===========================
+
+    else if (category === "designer") {
+
+        html = `
+
+            <label>
+                Описание услуги
+
+                <input
+                    type="text"
+                    class="description"
+                    placeholder="Дизайн макета"
+                >
+
+            </label>
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <label>
+                Цена
+
+                <input
+                    type="number"
+                    class="salePrice"
+                    min="0"
+                    placeholder="Сумма"
+                >
+
+            </label>
+        `;
+    }
+
+    // ===========================
+    // СРОЧНОСТЬ
+    // ===========================
+
+    else if (category === "urgent") {
+
+        html = `
+
+            <label>
+                Описание
+
+                <input
+                    type="text"
+                    class="description"
+                    placeholder="Срочное выполнение"
+                >
+
+            </label>
+
+            <label>
+                Количество
+
+                <input
+                    type="number"
+                    class="quantity"
+                    min="1"
+                    value="1"
+                >
+
+            </label>
+
+            <label>
+                Цена
+
+                <input
+                    type="number"
+                    class="salePrice"
+                    min="0"
+                    placeholder="Сумма"
+                >
+
+            </label>
+        `;
+    }
+
+    fields.innerHTML = html;
+
+    // Блок итогов
+    let totals =
+        position.querySelector(".positionTotals");
+
+    if (!totals) {
+
+        totals =
+            document.createElement("div");
+
+        totals.className = "positionTotals";
+
+        totals.innerHTML = `
+
+            <div>
+                Продажа:
+                <strong class="saleTotal">
+                    0 грн
+                </strong>
+            </div>
+
+            <div>
+                Себестоимость:
+                <strong class="costTotal">
+                    0 грн
+                </strong>
+            </div>
+
+            <div>
+                Прибыль:
+                <strong class="profitTotal">
+                    0 грн
+                </strong>
+            </div>
+
+        `;
+
+        position.appendChild(totals);
+    }
+
+    // Слушаем изменения полей
+    fields
+        .querySelectorAll("input, select")
+        .forEach(input => {
+
+            input.addEventListener(
+                "input",
+                () => calculatePosition(position)
+            );
+
+            input.addEventListener(
+                "change",
+                () => calculatePosition(position)
+            );
+        });
+
+    calculatePosition(position);
+}
+
+
+// ===============================
+// ДОБАВИТЬ ПОЗИЦИЮ
+// ===============================
+
+function addNewPosition() {
+
+    const positions =
+        document.querySelector("#positions");
+
+    if (!positions) return;
+
+    const first =
+        positions.querySelector(".position");
+
+    if (!first) return;
+
+    const newPosition =
+        first.cloneNode(true);
+
+    // Очищаем содержимое
+    newPosition
+        .querySelectorAll("input")
+        .forEach(input => {
+            input.value = "";
+        });
+
+    newPosition
+        .querySelectorAll("select")
+        .forEach(select => {
+            select.selectedIndex = 0;
+        });
+
+    // Удаляем старые динамические поля
+    newPosition
+        .querySelector(".dynamicFields")
+        ?.remove();
+
+    newPosition
+        .querySelector(".positionTotals")
+        ?.remove();
+
+    positions.appendChild(newPosition);
+
+    setupPosition(newPosition);
+}
+
+
+// ===============================
+// КНОПКА ДОБАВЛЕНИЯ
+// ===============================
+
+function setupAddPositionButton() {
+
+    document
+        .querySelectorAll("button")
+        .forEach(button => {
+
+            const text =
+                button.textContent
+                    .trim()
+                    .toLowerCase();
+
+            if (
+                text.includes("добавить позицию")
+            ) {
+
+                button.addEventListener(
+                    "click",
+                    event => {
+
+                        event.preventDefault();
+
+                        addNewPosition();
+                    }
+                );
+            }
+        });
+}
+
+
+// ===============================
+// ЗАПУСК
+// ===============================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        // Первая позиция
+        document
+            .querySelectorAll(".position")
+            .forEach(position => {
+
+                setupPosition(position);
+
+            });
+
+        // Добавление новых позиций
+        setupAddPositionButton();
+
+        // Навигация
         setupNavigation();
 
+        // Итоги
         updateOrderTotals();
 
-        // Кнопка "Сохранить заказ"
+        // Сохранить заказ
         document
             .querySelectorAll("button")
             .forEach(button => {
@@ -1689,37 +2264,18 @@ document.addEventListener(
                 }
             });
 
-        // Пересчёт при изменении полей
+        // Пересчёт
         document.addEventListener(
             "input",
             event => {
 
-                if (
-                    event.target.closest(".position")
-                ) {
-                    calculatePosition(
-                        event.target.closest(".position")
-                    );
+                const position =
+                    event.target.closest(".position");
+
+                if (position) {
+                    calculatePosition(position);
                 }
             }
         );
     }
 );
-
-
-// ===============================
-// PWA
-// ===============================
-
-if ("serviceWorker" in navigator) {
-
-    window.addEventListener(
-        "load",
-        () => {
-
-            navigator.serviceWorker.register(
-                "./sw.js"
-            );
-        }
-    );
-}
