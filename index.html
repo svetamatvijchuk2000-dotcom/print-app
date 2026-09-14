@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Расчёт заказов</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>Расчёт заказов</h1>
+        <p>Печать и сувенирная продукция</p>
+    </header>
+
+    <main class="container">
+
+        <section class="card">
+            <h2>Новый заказ</h2>
+
+            <label>Изделие</label>
+
+            <select id="product">
+                <option value="diploma_uv">Диплом УФ</option>
+                <option value="diploma_sublimation">Диплом сублимация</option>
+            </select>
+
+            <label>Размер</label>
+
+            <select id="size">
+                <option value="A5">А5</option>
+                <option value="A4">А4</option>
+                <option value="A3">А3</option>
+            </select>
+
+            <label>Количество</label>
+
+            <input
+                type="number"
+                id="quantity"
+                value="1"
+                min="1"
+            >
+
+            <button onclick="calculate()">
+                Рассчитать
+            </button>
+
+            <div class="result">
+                <span>Стоимость:</span>
+                <strong id="total">0 грн</strong>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
