@@ -12572,3 +12572,495 @@ document.addEventListener(
         );
     }
 );
+
+// ============================================================
+// НОВЫЕ СТАТУСЫ ЗАКАЗА
+// ============================================================
+
+const ORDER_STATUSES_NEW = [
+    "Новый",
+    "Принят",
+    "В печати",
+    "Отправлен",
+    "Завершён",
+    "Отменён"
+];
+
+
+// ============================================================
+// ЦВЕТА СТАТУСОВ
+// ============================================================
+
+function getOrderStatusClass(status) {
+
+    switch (String(status || "").trim()) {
+
+        case "Новый":
+            return "order-status-new";
+
+        case "Принят":
+            return "order-status-accepted";
+
+        case "В печати":
+            return "order-status-printing";
+
+        case "Отправлен":
+            return "order-status-sent";
+
+        case "Завершён":
+            return "order-status-completed";
+
+        case "Отменён":
+            return "order-status-cancelled";
+
+        default:
+            return "";
+    }
+}
+
+
+// ============================================================
+// OPTIONS ДЛЯ SELECT
+// ============================================================
+
+function createNewOrderStatusOptions(selectedStatus) {
+
+    return ORDER_STATUSES_NEW
+        .map(status => `
+            <option
+                value="${status}"
+                ${status === selectedStatus ? "selected" : ""}
+            >
+                ${status}
+            </option>
+        `)
+        .join("");
+}
+
+
+// ============================================================
+// ЗАМЕНЯЕМ СТАТУСЫ В РЕДАКТОРЕ ЗАКАЗА
+// ============================================================
+
+function makeUnifiedOrderStatusOptions(selected) {
+
+    return createNewOrderStatusOptions(
+        selected
+    );
+}
+
+
+// ============================================================
+// ОБНОВЛЯЕМ SELECT СТАТУСОВ В СПИСКЕ ЗАКАЗОВ
+// ============================================================
+
+function updateOrderStatusSelects() {
+
+    document
+        .querySelectorAll(
+            "#ordersList .order-card select"
+        )
+        .forEach(select => {
+
+            const values =
+                Array.from(
+                    select.options
+                )
+                .map(option =>
+                    option.value
+                );
+
+
+            const looksLikeStatusSelect =
+                values.includes("Новый")
+                ||
+                values.includes("В работе")
+                ||
+                values.includes("Готов")
+                ||
+                values.includes("Выдан")
+                ||
+                values.includes("Принят")
+                ||
+                values.includes("В печати");
+
+
+            if (!looksLikeStatusSelect) {
+                return;
+            }
+
+
+            const current =
+                select.value;
+
+
+            let selected =
+                current;
+
+
+            // Переводим старые статусы
+            // на новые
+
+            if (current === "В работе") {
+                selected = "Принят";
+            }
+
+            if (current === "Готов") {
+                selected = "В печати";
+            }
+
+            if (current === "Выдан") {
+                selected = "Завершён";
+            }
+
+
+            select.innerHTML =
+                createNewOrderStatusOptions(
+                    selected
+                );
+
+
+            select.value =
+                selected;
+
+
+            applyStatusColorToSelect(
+                select
+            );
+        });
+}
+
+
+// ============================================================
+// ЦВЕТ SELECT В ЗАВИСИМОСТИ ОТ СТАТУСА
+// ============================================================
+
+function applyStatusColorToSelect(select) {
+
+    if (!select) {
+        return;
+    }
+
+
+    select.classList.remove(
+        "order-status-new",
+        "order-status-accepted",
+        "order-status-printing",
+        "order-status-sent",
+        "order-status-completed",
+        "order-status-cancelled"
+    );
+
+
+    const statusClass =
+        getOrderStatusClass(
+            select.value
+        );
+
+
+    if (statusClass) {
+        select.classList.add(
+            statusClass
+        );
+    }
+}
+
+
+// ============================================================
+// ЦВЕТ МЕНЯЕТСЯ СРАЗУ ПОСЛЕ ВЫБОРА
+// ============================================================
+
+document.addEventListener(
+    "change",
+    event => {
+
+        const select =
+            event.target.closest(
+                "#ordersList .order-card select"
+            );
+
+
+        if (!select) {
+            return;
+        }
+
+
+        const values =
+            Array.from(
+                select.options
+            )
+            .map(option =>
+                option.value
+            );
+
+
+        if (
+            !values.some(value =>
+                ORDER_STATUSES_NEW.includes(
+                    value
+                )
+            )
+        ) {
+            return;
+        }
+
+
+        applyStatusColorToSelect(
+            select
+        );
+    }
+);
+
+
+// ============================================================
+// МИГРАЦИЯ СТАРЫХ ЗАКАЗОВ
+// ============================================================
+
+function migrateOldOrderStatuses() {
+
+    const orders =
+        getOrders();
+
+
+    let changed =
+        false;
+
+
+    orders.forEach(order => {
+
+        switch (order.status) {
+
+            case "В работе":
+                order.status = "Принят";
+                changed = true;
+                break;
+
+            case "Готов":
+                order.status = "В печати";
+                changed = true;
+                break;
+
+            case "Выдан":
+                order.status = "Завершён";
+                changed = true;
+                break;
+        }
+    });
+
+
+    if (changed) {
+
+        saveOrders(
+            orders
+        );
+    }
+}
+
+
+// ============================================================
+// ПОСЛЕ ОТРИСОВКИ СПИСКА ЗАКАЗОВ
+// ============================================================
+
+const _renderOrderCardsNewStatuses =
+    renderOrderCards;
+
+
+renderOrderCards = function () {
+
+    _renderOrderCardsNewStatuses();
+
+
+    setTimeout(
+        updateOrderStatusSelects,
+        0
+    );
+};
+
+
+// ============================================================
+// ПОСЛЕ ОТКРЫТИЯ ЗАКАЗА
+// ============================================================
+
+const _renderOrderDetailsNewStatuses =
+    renderOrderDetails;
+
+
+renderOrderDetails = function (order) {
+
+    _renderOrderDetailsNewStatuses(
+        order
+    );
+
+
+    setTimeout(
+        () => {
+
+            const select =
+                document.getElementById(
+                    "editUnifiedOrderStatus"
+                );
+
+
+            if (select) {
+
+                select.innerHTML =
+                    createNewOrderStatusOptions(
+                        order.status
+                    );
+
+
+                select.value =
+                    order.status;
+
+
+                applyStatusColorToSelect(
+                    select
+                );
+            }
+
+        },
+        0
+    );
+};
+
+
+// ============================================================
+// ЦВЕТ СТАТУСА В РЕДАКТОРЕ
+// ============================================================
+
+document.addEventListener(
+    "change",
+    event => {
+
+        if (
+            event.target.id !==
+            "editUnifiedOrderStatus"
+        ) {
+            return;
+        }
+
+
+        applyStatusColorToSelect(
+            event.target
+        );
+    }
+);
+
+
+// ============================================================
+// СТИЛИ СТАТУСОВ
+// ============================================================
+
+function addNewOrderStatusStyles() {
+
+    if (
+        document.getElementById(
+            "newOrderStatusStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "newOrderStatusStyles";
+
+
+    style.textContent = `
+
+        .order-status-new {
+            background: #e8f3ff !important;
+            color: #1769aa !important;
+            border-color: #b9d9f5 !important;
+        }
+
+
+        .order-status-accepted {
+            background: #fff1df !important;
+            color: #b36200 !important;
+            border-color: #f1c78f !important;
+        }
+
+
+        .order-status-printing {
+            background: #f1eaff !important;
+            color: #7044b8 !important;
+            border-color: #d2bff3 !important;
+        }
+
+
+        .order-status-sent {
+            background: #e4f8ed !important;
+            color: #18804b !important;
+            border-color: #a9ddc0 !important;
+        }
+
+
+        .order-status-completed {
+            background: #eeeeee !important;
+            color: #555555 !important;
+            border-color: #cccccc !important;
+        }
+
+
+        .order-status-cancelled {
+            background: #ffe9e9 !important;
+            color: #bd2929 !important;
+            border-color: #efb5b5 !important;
+        }
+
+
+        #ordersList select.order-status-new,
+        #ordersList select.order-status-accepted,
+        #ordersList select.order-status-printing,
+        #ordersList select.order-status-sent,
+        #ordersList select.order-status-completed,
+        #ordersList select.order-status-cancelled,
+        #editUnifiedOrderStatus {
+
+            font-weight: 700;
+
+            border-width: 1px;
+
+            border-style: solid;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addNewOrderStatusStyles();
+
+        migrateOldOrderStatuses();
+
+        setTimeout(
+            () => {
+
+                renderOrderCards();
+
+                updateOrderStatusSelects();
+
+            },
+            0
+        );
+    }
+);
