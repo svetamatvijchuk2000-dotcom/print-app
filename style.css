@@ -1,91 +1,386 @@
 * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    min-height: 100%;
 }
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    padding: 0 0 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     background: #f5f5f7;
     color: #222;
 }
 
+/* Шапка */
+
 .header {
-    background: white;
-    padding: 25px 20px;
+    background: #ffffff;
+    padding: 22px 18px 20px;
     text-align: center;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #e5e5e5;
 }
 
 .header h1 {
-    margin: 0 0 8px;
-    font-size: 26px;
+    margin: 0 0 6px;
+    font-size: 25px;
+    font-weight: 700;
 }
 
 .header p {
     margin: 0;
     color: #777;
+    font-size: 14px;
 }
+
+
+/* Основной контейнер */
 
 .container {
-    max-width: 600px;
-    margin: 30px auto;
-    padding: 0 16px;
+    width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 16px;
 }
 
+
+/* Карточки */
+
 .card {
-    background: white;
+    background: #ffffff;
     border-radius: 18px;
-    padding: 24px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
 }
 
 .card h2 {
-    margin-top: 0;
+    margin: 0 0 16px;
+    font-size: 20px;
 }
+
+
+/* Заголовок секции */
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title h2 {
+    margin-bottom: 0;
+}
+
+
+/* Поля */
 
 label {
     display: block;
-    margin-top: 18px;
+    margin-top: 15px;
     margin-bottom: 7px;
+    font-size: 14px;
     font-weight: 600;
+    color: #444;
 }
 
-select,
-input {
+input,
+select {
     width: 100%;
-    padding: 14px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
+    min-height: 48px;
+    padding: 12px 13px;
+    border: 1px solid #dcdcdc;
+    border-radius: 11px;
+    background: #ffffff;
+    color: #222;
     font-size: 16px;
-    background: white;
+    outline: none;
+    appearance: none;
 }
 
-button {
-    width: 100%;
-    margin-top: 24px;
-    padding: 15px;
+input:focus,
+select:focus {
+    border-color: #999;
+}
+
+
+/* Позиция заказа */
+
+.position {
+    margin-top: 18px;
+    padding: 16px;
+    background: #f7f7f9;
+    border-radius: 15px;
+    border: 1px solid #e8e8eb;
+}
+
+.position:first-child {
+    margin-top: 16px;
+}
+
+.position-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.position-header strong {
+    font-size: 16px;
+}
+
+
+/* Кнопка удаления */
+
+.delete-button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 50%;
+    background: #eeeeef;
+    color: #666;
+    font-size: 24px;
+    line-height: 30px;
+}
+
+.delete-button:active {
+    transform: scale(0.94);
+}
+
+
+/* Маленькая кнопка */
+
+.small-button {
+    width: auto;
+    min-height: 40px;
+    padding: 9px 13px;
+    margin: 0;
     border: none;
     border-radius: 10px;
-    font-size: 17px;
-    font-weight: 600;
     background: #222;
-    color: white;
-    cursor: pointer;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-button:active {
+.small-button:active {
+    transform: scale(0.97);
+}
+
+
+/* Информация о цене */
+
+.price-info {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #dedee1;
+}
+
+.price-info > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.price-info > div:first-child {
+    margin-top: 0;
+}
+
+.price-info span {
+    color: #666;
+    font-size: 14px;
+}
+
+.price-info strong {
+    font-size: 15px;
+}
+
+
+/* Поля ручного ввода */
+
+.manual-fields {
+    margin-top: 4px;
+}
+
+
+/* Итоги */
+
+.total-card {
+    background: #222;
+    color: #ffffff;
+}
+
+.total-card h2 {
+    color: #ffffff;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.total-row:last-child {
+    border-bottom: none;
+}
+
+.total-row span {
+    color: #cccccc;
+}
+
+.total-row strong {
+    font-size: 17px;
+}
+
+.profit-row {
+    padding-top: 16px;
+    margin-top: 4px;
+}
+
+.profit-row strong {
+    font-size: 22px;
+}
+
+
+/* Кнопки действий */
+
+.actions {
+    margin-bottom: 20px;
+}
+
+.main-button,
+.secondary-button {
+    width: 100%;
+    min-height: 52px;
+    border: none;
+    border-radius: 13px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.main-button {
+    background: #222;
+    color: #ffffff;
+}
+
+.secondary-button {
+    margin-top: 10px;
+    background: #ffffff;
+    color: #222;
+    border: 1px solid #dddddd;
+}
+
+.main-button:active,
+.secondary-button:active {
     transform: scale(0.98);
 }
 
-.result {
+
+/* Нижняя навигация */
+
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+
     display: flex;
-    justify-content: space-between;
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-    font-size: 18px;
+    justify-content: space-around;
+
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+
+    border-top: 1px solid #dddddd;
 }
 
-.result strong {
-    font-size: 22px;
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 52px;
+
+    padding: 5px;
+    margin: 0;
+
+    border: none;
+    background: transparent;
+    color: #777;
+}
+
+.nav-item span {
+    font-size: 21px;
+    line-height: 22px;
+}
+
+.nav-item small {
+    margin-top: 3px;
+    font-size: 11px;
+}
+
+.nav-item.active {
+    color: #222;
+    font-weight: 600;
+}
+
+
+/* На больших экранах */
+
+@media (min-width: 700px) {
+
+    .container {
+        padding-top: 25px;
+    }
+
+    .card {
+        padding: 22px;
+    }
+
+}
+
+
+/* Убираем стандартные стрелки некоторых браузеров */
+
+select {
+    background-image:
+        linear-gradient(45deg, transparent 50%, #555 50%),
+        linear-gradient(135deg, #555 50%, transparent 50%);
+
+    background-position:
+        calc(100% - 18px) 21px,
+        calc(100% - 13px) 21px;
+
+    background-size:
+        5px 5px,
+        5px 5px;
+
+    background-repeat: no-repeat;
+}
+
+
+/* Чтобы кнопки не выглядели слишком маленькими */
+
+button {
+    cursor: pointer;
+    font-family: inherit;
+}
+
+button:active {
+    opacity: 0.9;
 }
