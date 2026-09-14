@@ -18124,3 +18124,1248 @@ document.addEventListener(
         addExportBlockToSettings();
     }
 );
+
+// ============================================================
+// ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ НАВИГАЦИИ + ЭКСПОРТ
+// ============================================================
+
+
+
+// ============================================================
+// 1. УБИРАЕМ СТАРУЮ ДОПОЛНИТЕЛЬНУЮ НАВИГАЦИЮ
+// КОТОРАЯ ПОЯВЛЯЕТСЯ ВНУТРИ СТРАНИЦ
+// ============================================================
+
+function removeExtraNavigation() {
+
+    document
+        .querySelectorAll(
+            ".extra-bottom-nav"
+        )
+        .forEach(nav => {
+            nav.remove();
+        });
+}
+
+
+
+// ============================================================
+// 2. ДЕЛАЕМ ОДНУ НОРМАЛЬНУЮ НИЖНЮЮ НАВИГАЦИЮ
+// ============================================================
+
+function setupFinalBottomNavigation() {
+
+    const nav =
+        document.querySelector(
+            ".bottom-nav"
+        );
+
+    if (!nav) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // КЛИЕНТЫ
+    // --------------------------------------------------------
+
+    let clientsButton =
+        nav.querySelector(
+            '[data-screen="clients"]'
+        );
+
+
+    if (!clientsButton) {
+
+        clientsButton =
+            document.createElement(
+                "button"
+            );
+
+        clientsButton.type =
+            "button";
+
+        clientsButton.className =
+            "nav-item final-clients-nav";
+
+        clientsButton.dataset.screen =
+            "clients";
+
+        clientsButton.dataset.nav =
+            "Клиенты";
+
+        clientsButton.innerHTML = `
+            <span>👤</span>
+            <small>Клиенты</small>
+        `;
+
+        clientsButton.onclick =
+            function () {
+
+                if (
+                    typeof showClients ===
+                    "function"
+                ) {
+
+                    showClients();
+                }
+            };
+
+
+        const ordersButton =
+            nav.querySelector(
+                '[data-screen="orders"]'
+            );
+
+
+        if (ordersButton) {
+
+            ordersButton
+                .insertAdjacentElement(
+                    "afterend",
+                    clientsButton
+                );
+
+        } else {
+
+            nav.appendChild(
+                clientsButton
+            );
+        }
+    }
+
+
+    // --------------------------------------------------------
+    // СТАТИСТИКА
+    // --------------------------------------------------------
+
+    let statisticsButton =
+        nav.querySelector(
+            '[data-screen="statistics"]'
+        );
+
+
+    if (!statisticsButton) {
+
+        statisticsButton =
+            document.createElement(
+                "button"
+            );
+
+        statisticsButton.type =
+            "button";
+
+        statisticsButton.className =
+            "nav-item final-statistics-nav";
+
+        statisticsButton.dataset.screen =
+            "statistics";
+
+        statisticsButton.dataset.nav =
+            "Статистика";
+
+        statisticsButton.innerHTML = `
+            <span>📊</span>
+            <small>Статистика</small>
+        `;
+
+        statisticsButton.onclick =
+            function () {
+
+                if (
+                    typeof showStatistics ===
+                    "function"
+                ) {
+
+                    showStatistics();
+                }
+            };
+
+
+        const settingsButton =
+            nav.querySelector(
+                '[data-screen="settings"]'
+            );
+
+
+        if (settingsButton) {
+
+            settingsButton
+                .insertAdjacentElement(
+                    "beforebegin",
+                    statisticsButton
+                );
+
+        } else {
+
+            nav.appendChild(
+                statisticsButton
+            );
+        }
+    }
+
+
+    // --------------------------------------------------------
+    // УБИРАЕМ ВОЗМОЖНЫЕ ДУБЛИКАТЫ КЛИЕНТОВ / СТАТИСТИКИ
+    // --------------------------------------------------------
+
+    const clientButtons =
+        nav.querySelectorAll(
+            '[data-screen="clients"]'
+        );
+
+    clientButtons.forEach(
+        (button, index) => {
+
+            if (index > 0) {
+                button.remove();
+            }
+        }
+    );
+
+
+    const statisticsButtons =
+        nav.querySelectorAll(
+            '[data-screen="statistics"]'
+        );
+
+    statisticsButtons.forEach(
+        (button, index) => {
+
+            if (index > 0) {
+                button.remove();
+            }
+        }
+    );
+}
+
+
+
+// ============================================================
+// 3. СТИЛИ КОМПАКТНОГО НИЖНЕГО МЕНЮ
+// ============================================================
+
+function addFinalNavigationStyles() {
+
+    const old =
+        document.getElementById(
+            "finalCompactNavStyles"
+        );
+
+    if (old) {
+        old.remove();
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "finalCompactNavStyles";
+
+
+    style.textContent = `
+
+        /* Полностью скрываем старое меню внутри страниц */
+
+        .extra-bottom-nav {
+            display: none !important;
+        }
+
+
+        /* Основное нижнее меню */
+
+        .bottom-nav {
+
+            position: fixed !important;
+
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+
+            z-index: 1000 !important;
+
+            display: grid !important;
+
+            grid-template-columns:
+                repeat(6, minmax(0, 1fr)) !important;
+
+            align-items: stretch !important;
+
+            gap: 0 !important;
+
+            width: 100% !important;
+
+            padding:
+                5px
+                3px
+                calc(5px + env(safe-area-inset-bottom))
+                !important;
+
+            box-sizing: border-box !important;
+
+            overflow: visible !important;
+
+            background:
+                rgba(255,255,255,.97) !important;
+
+            border-top:
+                1px solid
+                rgba(0,0,0,.08) !important;
+
+            box-shadow:
+                0 -2px 12px
+                rgba(0,0,0,.04) !important;
+        }
+
+
+        .bottom-nav .nav-item {
+
+            min-width: 0 !important;
+
+            width: 100% !important;
+
+            height: 52px !important;
+
+            padding:
+                3px 1px !important;
+
+            margin: 0 !important;
+
+            border: 0 !important;
+
+            border-radius: 9px !important;
+
+            background:
+                transparent !important;
+
+            display: flex !important;
+
+            flex-direction: column !important;
+
+            justify-content: center !important;
+
+            align-items: center !important;
+
+            gap: 1px !important;
+
+            box-sizing: border-box !important;
+
+            font-family: inherit !important;
+        }
+
+
+        .bottom-nav .nav-item span {
+
+            display: block !important;
+
+            font-size: 19px !important;
+
+            line-height: 21px !important;
+        }
+
+
+        .bottom-nav .nav-item small {
+
+            display: block !important;
+
+            width: 100% !important;
+
+            overflow: hidden !important;
+
+            text-overflow: ellipsis !important;
+
+            white-space: nowrap !important;
+
+            text-align: center !important;
+
+            font-size: 9px !important;
+
+            line-height: 12px !important;
+
+            color: #777d88 !important;
+        }
+
+
+        .bottom-nav .nav-item.active small {
+
+            color: #1778df !important;
+
+            font-weight: 700 !important;
+        }
+
+
+        /* Чтобы контент не попадал под меню */
+
+        .app-main {
+
+            padding-bottom:
+                calc(
+                    75px +
+                    env(safe-area-inset-bottom)
+                ) !important;
+        }
+
+
+        @media (max-width: 380px) {
+
+            .bottom-nav .nav-item small {
+
+                font-size:
+                    8px !important;
+            }
+
+
+            .bottom-nav .nav-item span {
+
+                font-size:
+                    18px !important;
+            }
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+
+// ============================================================
+// 4. ОБНОВЛЯЕМ ACTIVE В НИЖНЕМ МЕНЮ
+// ============================================================
+
+function finalSetBottomNavActive(screenName) {
+
+    const map = {
+
+        order:
+            "order",
+
+        catalog:
+            "catalog",
+
+        orders:
+            "orders",
+
+        clients:
+            "clients",
+
+        statistics:
+            "statistics",
+
+        settings:
+            "settings"
+    };
+
+
+    document
+        .querySelectorAll(
+            ".bottom-nav .nav-item"
+        )
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+
+                button.dataset.screen ===
+                    map[screenName]
+            );
+        });
+}
+
+
+
+// ============================================================
+// 5. ЭКСПОРТ — ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
+function finalExportNumber(value) {
+
+    const number =
+        Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+function finalExportDateStamp() {
+
+    const date =
+        new Date();
+
+
+    return [
+        date.getFullYear(),
+
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0"),
+
+        String(
+            date.getDate()
+        ).padStart(2, "0")
+
+    ].join("-");
+}
+
+
+function finalExportFormatDate(timestamp) {
+
+    if (!timestamp) {
+        return "";
+    }
+
+
+    const date =
+        new Date(
+            Number(timestamp)
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+    }
+
+
+    return date.toLocaleString(
+        "uk-UA",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+
+function finalCSVValue(value) {
+
+    return `"${String(
+        value ?? ""
+    )
+        .replace(
+            /"/g,
+            '""'
+        )}"`;
+}
+
+
+
+// ============================================================
+// 6. СОХРАНЯЕМ ФАЙЛ
+// ============================================================
+
+function finalDownloadFile(
+    filename,
+    content,
+    type
+) {
+
+    const blob =
+        new Blob(
+            [content],
+            {
+                type
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+
+    link.href =
+        url;
+
+    link.download =
+        filename;
+
+
+    document.body.appendChild(
+        link
+    );
+
+
+    link.click();
+
+
+    link.remove();
+
+
+    setTimeout(
+        () => {
+
+            URL.revokeObjectURL(
+                url
+            );
+
+        },
+        1500
+    );
+}
+
+
+
+// ============================================================
+// 7. НАЗВАНИЯ ПОЗИЦИЙ ДЛЯ ЭКСПОРТА
+// ============================================================
+
+function finalExportPositions(order) {
+
+    if (
+        !Array.isArray(
+            order?.positions
+        )
+    ) {
+
+        return "";
+    }
+
+
+    return order.positions
+        .map(position => {
+
+            const name =
+                position.name
+                ||
+                position.productName
+                ||
+                position.description
+                ||
+                position.product
+                ||
+                position.category
+                ||
+                "Позиция";
+
+
+            const quantity =
+                position.quantity
+                ||
+                position.qty
+                ||
+                1;
+
+
+            return `${name} × ${quantity}`;
+        })
+        .join("; ");
+}
+
+
+
+// ============================================================
+// 8. CSV
+// ============================================================
+
+function finalExportOrdersCSV() {
+
+    const orders =
+        typeof getOrders ===
+        "function"
+            ? getOrders()
+            : [];
+
+
+    if (!orders.length) {
+
+        alert(
+            "Нет заказов для экспорта."
+        );
+
+        return;
+    }
+
+
+    const rows = [];
+
+
+    rows.push(
+        [
+            "№ заказа",
+            "Дата",
+            "ФИО",
+            "Телефон",
+            "Канал продажи",
+            "Канал связи",
+            "Статус",
+            "Оплата",
+            "Город",
+            "Отделение",
+            "ТТН",
+            "Позиции",
+            "Продажа",
+            "Себестоимость",
+            "Прибыль",
+            "Комментарий"
+        ]
+        .map(
+            finalCSVValue
+        )
+        .join(";")
+    );
+
+
+    orders
+        .slice()
+        .sort(
+            (a, b) =>
+                Number(
+                    a.createdAt ||
+                    a.id ||
+                    0
+                )
+                -
+                Number(
+                    b.createdAt ||
+                    b.id ||
+                    0
+                )
+        )
+        .forEach(order => {
+
+            const sale =
+                typeof getOrderSale ===
+                "function"
+                    ? getOrderSale(order)
+                    : (
+                        order.saleTotal ??
+                        order.sale ??
+                        0
+                    );
+
+
+            const cost =
+                typeof getOrderCost ===
+                "function"
+                    ? getOrderCost(order)
+                    : (
+                        order.costTotal ??
+                        order.cost ??
+                        0
+                    );
+
+
+            const profit =
+                typeof getOrderProfit ===
+                "function"
+                    ? getOrderProfit(order)
+                    : (
+                        order.profitTotal ??
+                        order.profit ??
+                        (
+                            Number(sale) -
+                            Number(cost)
+                        )
+                    );
+
+
+            const row = [
+
+                order.number || "",
+
+                finalExportFormatDate(
+                    order.createdAt
+                ),
+
+                order.client || "",
+
+                order.clientPhone || "",
+
+                order.salesChannel || "",
+
+                order.contactChannel || "",
+
+                order.status || "",
+
+                order.paymentStatus || "",
+
+                order.deliveryCity
+                    ||
+                    order.city
+                    ||
+                    "",
+
+                order.deliveryBranch
+                    ||
+                    order.branch
+                    ||
+                    "",
+
+                order.ttn
+                    ||
+                    order.deliveryTTN
+                    ||
+                    "",
+
+                finalExportPositions(
+                    order
+                ),
+
+                finalExportNumber(
+                    sale
+                ),
+
+                finalExportNumber(
+                    cost
+                ),
+
+                finalExportNumber(
+                    profit
+                ),
+
+                order.comment || ""
+            ];
+
+
+            rows.push(
+                row
+                    .map(
+                        finalCSVValue
+                    )
+                    .join(";")
+            );
+        });
+
+
+    // BOM нужен для нормальной кириллицы в Excel
+
+    const csv =
+        "\uFEFF" +
+        rows.join("\r\n");
+
+
+    finalDownloadFile(
+
+        `Print-App-orders-${finalExportDateStamp()}.csv`,
+
+        csv,
+
+        "text/csv;charset=utf-8"
+    );
+}
+
+
+
+// ============================================================
+// 9. JSON — ПОЛНАЯ РЕЗЕРВНАЯ КОПИЯ
+// ============================================================
+
+function finalExportBackupJSON() {
+
+    const orders =
+        typeof getOrders ===
+        "function"
+            ? getOrders()
+            : [];
+
+
+    let catalogData =
+        null;
+
+
+    try {
+
+        if (
+            typeof loadCatalog ===
+            "function"
+        ) {
+
+            catalogData =
+                loadCatalog();
+        }
+
+    } catch (error) {
+
+        catalogData =
+            null;
+    }
+
+
+    const backup = {
+
+        application:
+            "Print App",
+
+        backupVersion:
+            1,
+
+        exportedAt:
+            new Date()
+                .toISOString(),
+
+        orders,
+
+        catalog:
+            catalogData
+    };
+
+
+    finalDownloadFile(
+
+        `Print-App-backup-${finalExportDateStamp()}.json`,
+
+        JSON.stringify(
+            backup,
+            null,
+            2
+        ),
+
+        "application/json;charset=utf-8"
+    );
+}
+
+
+
+// ============================================================
+// 10. ДОБАВЛЯЕМ ЭКСПОРТ В НАСТРОЙКИ
+// ============================================================
+
+function ensureFinalExportBlock() {
+
+    const settings =
+        document.getElementById(
+            "screenSettings"
+        );
+
+
+    if (!settings) {
+        return;
+    }
+
+
+    // Удаляем предыдущие версии экспорта,
+    // если они каким-то образом появились
+
+    settings
+        .querySelectorAll(
+            "#dataExportBlock, #finalExportBlock"
+        )
+        .forEach(element => {
+            element.remove();
+        });
+
+
+    const block =
+        document.createElement(
+            "div"
+        );
+
+
+    block.id =
+        "finalExportBlock";
+
+
+    block.className =
+        "settings-card final-export-card";
+
+
+    block.innerHTML = `
+
+        <div class="settings-title">
+            Экспорт данных
+        </div>
+
+
+        <div class="settings-text">
+
+            Сохрани данные заказов
+            в таблицу или создай
+            резервную копию приложения.
+
+        </div>
+
+
+        <div class="final-export-buttons">
+
+            <button
+                type="button"
+                class="final-export-button"
+                onclick="finalExportOrdersCSV()"
+            >
+                📊 Экспорт в Excel / CSV
+            </button>
+
+
+            <button
+                type="button"
+                class="final-export-button final-export-backup"
+                onclick="finalExportBackupJSON()"
+            >
+                💾 Резервная копия
+            </button>
+
+        </div>
+    `;
+
+
+    // Ставим экспорт ПЕРЕД красной кнопкой удаления
+
+    const deleteButton =
+        settings.querySelector(
+            ".danger-button"
+        );
+
+
+    if (deleteButton) {
+
+        deleteButton.insertAdjacentElement(
+            "beforebegin",
+            block
+        );
+
+    } else {
+
+        settings.appendChild(
+            block
+        );
+    }
+}
+
+
+
+// ============================================================
+// 11. СТИЛИ ЭКСПОРТА
+// ============================================================
+
+function addFinalExportStyles() {
+
+    const old =
+        document.getElementById(
+            "finalExportStyles"
+        );
+
+
+    if (old) {
+        old.remove();
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "finalExportStyles";
+
+
+    style.textContent = `
+
+        .final-export-card {
+
+            margin-bottom: 16px;
+        }
+
+
+        .final-export-buttons {
+
+            display: grid;
+
+            grid-template-columns: 1fr;
+
+            gap: 8px;
+
+            margin-top: 14px;
+        }
+
+
+        .final-export-button {
+
+            width: 100%;
+
+            min-height: 46px;
+
+            padding: 10px 14px;
+
+            border: 0;
+
+            border-radius: 12px;
+
+            background: #1682f4;
+
+            color: white;
+
+            font-family: inherit;
+
+            font-size: 14px;
+
+            font-weight: 700;
+        }
+
+
+        .final-export-backup {
+
+            background: #eceef2;
+
+            color: #171b24;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+
+// ============================================================
+// 12. КОГДА ОТКРЫВАЕМ НАСТРОЙКИ —
+// ГАРАНТИРУЕМ, ЧТО ЭКСПОРТ ТАМ ЕСТЬ
+// ============================================================
+
+if (
+    typeof showSettings ===
+    "function"
+) {
+
+    const _showSettingsFinalExport =
+        showSettings;
+
+
+    showSettings = function () {
+
+        _showSettingsFinalExport();
+
+
+        removeExtraNavigation();
+
+        setupFinalBottomNavigation();
+
+        ensureFinalExportBlock();
+
+        finalSetBottomNavActive(
+            "settings"
+        );
+    };
+}
+
+
+
+// ============================================================
+// 13. ОБНОВЛЯЕМ ACTIVE ДЛЯ КЛИЕНТОВ
+// ============================================================
+
+if (
+    typeof showClients ===
+    "function"
+) {
+
+    const _showClientsFinalNav =
+        showClients;
+
+
+    showClients = function () {
+
+        _showClientsFinalNav();
+
+
+        removeExtraNavigation();
+
+        setupFinalBottomNavigation();
+
+        finalSetBottomNavActive(
+            "clients"
+        );
+    };
+}
+
+
+
+// ============================================================
+// 14. НАБЛЮДАТЕЛЬ
+// ЕСЛИ СТАРЫЙ КОД СНОВА СОЗДАСТ ЛИШНЕЕ МЕНЮ,
+// МЫ ЕГО УБЕРЁМ
+// ============================================================
+
+const finalNavigationObserver =
+    new MutationObserver(
+        () => {
+
+            removeExtraNavigation();
+
+            setupFinalBottomNavigation();
+        }
+    );
+
+
+
+// ============================================================
+// 15. ЗАПУСК
+// ============================================================
+
+function startFinalNavigationAndExport() {
+
+    addFinalNavigationStyles();
+
+    addFinalExportStyles();
+
+    removeExtraNavigation();
+
+    setupFinalBottomNavigation();
+
+    ensureFinalExportBlock();
+
+
+    if (
+        document.body &&
+        !document.body.dataset
+            .finalNavigationObserver
+    ) {
+
+        document.body.dataset
+            .finalNavigationObserver =
+            "1";
+
+
+        finalNavigationObserver.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
+}
+
+
+if (
+    document.readyState ===
+    "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        startFinalNavigationAndExport
+    );
+
+} else {
+
+    startFinalNavigationAndExport();
+}
