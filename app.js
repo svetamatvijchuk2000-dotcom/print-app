@@ -13982,3 +13982,871 @@ document.addEventListener(
         );
     }
 );
+
+// ============================================================
+// ФИНАЛЬНАЯ ЛОГИКА СТАТУСОВ
+// Статус меняется ТОЛЬКО на странице "Заказы"
+// Внутри конкретного заказа статус скрываем
+// ============================================================
+
+const FINAL_ORDER_STATUSES = [
+    "Новый",
+    "Принят",
+    "В печати",
+    "Отправлен",
+    "Завершён",
+    "Отменён"
+];
+
+
+// ============================================================
+// НОРМАЛИЗАЦИЯ СТАРЫХ СТАТУСОВ
+// ============================================================
+
+function finalNormalizeOrderStatus(status) {
+
+    const value =
+        String(status || "").trim();
+
+    if (value === "В работе") {
+        return "Принят";
+    }
+
+    if (value === "Готов") {
+        return "В печати";
+    }
+
+    if (value === "Выдан") {
+        return "Завершён";
+    }
+
+    if (
+        FINAL_ORDER_STATUSES.includes(value)
+    ) {
+        return value;
+    }
+
+    return "Новый";
+}
+
+
+// ============================================================
+// OPTIONS
+// ============================================================
+
+function finalStatusOptions(selected) {
+
+    const current =
+        finalNormalizeOrderStatus(
+            selected
+        );
+
+    return FINAL_ORDER_STATUSES
+        .map(status => `
+            <option
+                value="${status}"
+                ${status === current ? "selected" : ""}
+            >
+                ${status}
+            </option>
+        `)
+        .join("");
+}
+
+
+// ============================================================
+// КЛАСС ЦВЕТА
+// ============================================================
+
+function finalStatusClass(status) {
+
+    switch (
+        finalNormalizeOrderStatus(
+            status
+        )
+    ) {
+
+        case "Новый":
+            return "final-status-new";
+
+        case "Принят":
+            return "final-status-accepted";
+
+        case "В печати":
+            return "final-status-printing";
+
+        case "Отправлен":
+            return "final-status-sent";
+
+        case "Завершён":
+            return "final-status-completed";
+
+        case "Отменён":
+            return "final-status-cancelled";
+
+        default:
+            return "";
+    }
+}
+
+
+// ============================================================
+// ЦВЕТ SELECT
+// ============================================================
+
+function finalApplyStatusColor(select) {
+
+    if (!select) {
+        return;
+    }
+
+    select.classList.remove(
+        "final-status-new",
+        "final-status-accepted",
+        "final-status-printing",
+        "final-status-sent",
+        "final-status-completed",
+        "final-status-cancelled"
+    );
+
+    const className =
+        finalStatusClass(
+            select.value
+        );
+
+    if (className) {
+
+        select.classList.add(
+            className
+        );
+    }
+}
+
+
+// ============================================================
+// МИГРАЦИЯ СТАРЫХ ЗАКАЗОВ
+// ============================================================
+
+function finalMigrateStatuses() {
+
+    const orders =
+        getOrders();
+
+    let changed =
+        false;
+
+    orders.forEach(order => {
+
+        const normalized =
+            finalNormalizeOrderStatus(
+                order.status
+            );
+
+        if (
+            order.status !== normalized
+        ) {
+
+            order.status =
+                normalized;
+
+            changed =
+                true;
+        }
+    });
+
+    if (changed) {
+
+        saveOrders(
+            orders
+        );
+    }
+}
+
+
+// ============================================================
+// ПОИСК ID ЗАКАЗА В КАРТОЧКЕ
+// ============================================================
+
+function finalGetOrderIdFromCard(card) {
+
+    if (!card) {
+        return null;
+    }
+
+    if (card.dataset.orderId) {
+        return card.dataset.orderId;
+    }
+
+    const clickable =
+        card.querySelectorAll(
+            "[onclick]"
+        );
+
+    for (
+        const element of clickable
+    ) {
+
+        const onclick =
+            element.getAttribute(
+                "onclick"
+            ) || "";
+
+        const match =
+            onclick.match(
+                /\((['"]?)(\d+)\1/
+            );
+
+        if (match) {
+            return match[2];
+        }
+    }
+
+    const text =
+        card.textContent || "";
+
+    const numberMatch =
+        text.match(
+            /Заказ\s*№\s*0*(\d+)/i
+        );
+
+    if (numberMatch) {
+
+        const orderNumber =
+            Number(
+                numberMatch[1]
+            );
+
+        const order =
+            getOrders().find(
+                item =>
+                    Number(
+                        item.number
+                    ) ===
+                    orderNumber
+            );
+
+        if (order) {
+            return order.id;
+        }
+    }
+
+    return null;
+}
+
+
+// ============================================================
+// УДАЛЯЕМ ВСЕ СТАРЫЕ SELECT СТАТУСА ИЗ СПИСКА
+// И СОЗДАЁМ ОДИН НОРМАЛЬНЫЙ
+// ============================================================
+
+function finalRenderStatusesInOrderList() {
+
+    const orders =
+        getOrders();
+
+    document
+        .querySelectorAll(
+            "#ordersList .order-card"
+        )
+        .forEach(card => {
+
+            const orderId =
+                finalGetOrderIdFromCard(
+                    card
+                );
+
+            if (!orderId) {
+                return;
+            }
+
+            const order =
+                orders.find(
+                    item =>
+                        String(item.id) ===
+                        String(orderId)
+                );
+
+            if (!order) {
+                return;
+            }
+
+
+            // ----------------------------------------
+            // УДАЛЯЕМ НАШИ СТАРЫЕ ДОБАВЛЕННЫЕ БЛОКИ
+            // ----------------------------------------
+
+            card
+                .querySelectorAll(
+                    ".unified-status-list-block, .final-status-list-block"
+                )
+                .forEach(
+                    element =>
+                        element.remove()
+                );
+
+
+            // ----------------------------------------
+            // ИЩЕМ СТАРЫЕ SELECT СО СТАТУСАМИ
+            // ----------------------------------------
+
+            card
+                .querySelectorAll(
+                    "select"
+                )
+                .forEach(select => {
+
+                    const optionValues =
+                        Array.from(
+                            select.options
+                        )
+                        .map(
+                            option =>
+                                String(
+                                    option.value
+                                ).trim()
+                        );
+
+                    const possibleStatuses = [
+                        "Новый",
+                        "В работе",
+                        "Готов",
+                        "Выдан",
+                        "Отменён",
+                        "Принят",
+                        "В печати",
+                        "Отправлен",
+                        "Завершён"
+                    ];
+
+                    const isStatusSelect =
+                        optionValues.some(
+                            value =>
+                                possibleStatuses.includes(
+                                    value
+                                )
+                        );
+
+                    if (isStatusSelect) {
+
+                        const parent =
+                            select.closest(
+                                ".unified-status-list-block"
+                            );
+
+                        if (parent) {
+
+                            parent.remove();
+
+                        } else {
+
+                            select.style.display =
+                                "none";
+                        }
+                    }
+                });
+
+
+            // ----------------------------------------
+            // ДОБАВЛЯЕМ ОДИН SELECT
+            // ----------------------------------------
+
+            const block =
+                document.createElement(
+                    "div"
+                );
+
+            block.className =
+                "final-status-list-block";
+
+            block.innerHTML = `
+
+                <div class="final-status-label">
+                    Статус
+                </div>
+
+                <select
+                    class="final-order-status-select"
+                    data-order-id="${order.id}"
+                >
+                    ${finalStatusOptions(
+                        order.status
+                    )}
+                </select>
+
+            `;
+
+
+            const actions =
+                card.querySelector(
+                    ".order-actions"
+                );
+
+            if (actions) {
+
+                actions.insertAdjacentElement(
+                    "beforebegin",
+                    block
+                );
+
+            } else {
+
+                card.appendChild(
+                    block
+                );
+            }
+
+
+            const select =
+                block.querySelector(
+                    ".final-order-status-select"
+                );
+
+            finalApplyStatusColor(
+                select
+            );
+        });
+}
+
+
+// ============================================================
+// СОХРАНЕНИЕ СТАТУСА ИЗ СПИСКА "ЗАКАЗЫ"
+// ============================================================
+
+document.addEventListener(
+    "change",
+    event => {
+
+        const select =
+            event.target.closest(
+                ".final-order-status-select"
+            );
+
+        if (!select) {
+            return;
+        }
+
+        const orderId =
+            select.dataset.orderId;
+
+        if (!orderId) {
+            return;
+        }
+
+        const orders =
+            getOrders();
+
+        const order =
+            orders.find(
+                item =>
+                    String(item.id) ===
+                    String(orderId)
+            );
+
+        if (!order) {
+            return;
+        }
+
+        order.status =
+            finalNormalizeOrderStatus(
+                select.value
+            );
+
+        saveOrders(
+            orders
+        );
+
+        finalApplyStatusColor(
+            select
+        );
+    }
+);
+
+
+// ============================================================
+// СКРЫВАЕМ СТАТУС ВНУТРИ КОНКРЕТНОГО ЗАКАЗА
+// ============================================================
+
+function finalRemoveStatusFromOrderModal() {
+
+    const modal =
+        document.getElementById(
+            "orderModal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+
+    // ----------------------------------------
+    // УДАЛЯЕМ СТАТУС ИЗ РЕДАКТИРОВАНИЯ
+    // ----------------------------------------
+
+    const editStatus =
+        document.getElementById(
+            "editUnifiedOrderStatus"
+        );
+
+    if (editStatus) {
+
+        const field =
+            editStatus.closest(
+                ".field"
+            );
+
+        if (field) {
+
+            field.remove();
+
+        } else {
+
+            editStatus.remove();
+        }
+    }
+
+
+    // ----------------------------------------
+    // ИЩЕМ ЛЮБЫЕ ДРУГИЕ SELECT СТАТУСА
+    // ВНУТРИ МОДАЛЬНОГО ОКНА
+    // ----------------------------------------
+
+    modal
+        .querySelectorAll(
+            "select"
+        )
+        .forEach(select => {
+
+            // Оплату НЕ трогаем
+
+            if (
+                select.id ===
+                "editUnifiedPaymentStatus"
+            ) {
+                return;
+            }
+
+            const values =
+                Array.from(
+                    select.options
+                )
+                .map(
+                    option =>
+                        String(
+                            option.value
+                        ).trim()
+                );
+
+            const possibleStatuses = [
+                "Новый",
+                "В работе",
+                "Готов",
+                "Выдан",
+                "Отменён",
+                "Принят",
+                "В печати",
+                "Отправлен",
+                "Завершён"
+            ];
+
+            const isStatus =
+                values.some(
+                    value =>
+                        possibleStatuses.includes(
+                            value
+                        )
+                );
+
+            if (!isStatus) {
+                return;
+            }
+
+            const field =
+                select.closest(
+                    ".field"
+                );
+
+            if (field) {
+
+                field.remove();
+
+            } else {
+
+                select.remove();
+            }
+        });
+
+
+    // ----------------------------------------
+    // УБИРАЕМ ТЕКСТОВЫЙ БЛОК "СТАТУС"
+    // ЕСЛИ ОН ВЫВОДИТСЯ В ПРОСМОТРЕ ЗАКАЗА
+    // ----------------------------------------
+
+    modal
+        .querySelectorAll(
+            ".order-detail-block, .detail-row, .order-info-row"
+        )
+        .forEach(element => {
+
+            const text =
+                String(
+                    element.textContent ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+            if (
+                text.startsWith(
+                    "статус:"
+                )
+                ||
+                text.startsWith(
+                    "статус заказа"
+                )
+            ) {
+
+                // Не удаляем большой блок,
+                // если внутри есть много другой информации
+
+                const children =
+                    element.children.length;
+
+                if (children <= 2) {
+
+                    element.remove();
+                }
+            }
+        });
+}
+
+
+// ============================================================
+// ПОСЛЕ ОТРИСОВКИ СПИСКА
+// ============================================================
+
+const _finalRenderOrderCards =
+    renderOrderCards;
+
+renderOrderCards = function () {
+
+    _finalRenderOrderCards();
+
+    setTimeout(
+        finalRenderStatusesInOrderList,
+        0
+    );
+};
+
+
+// ============================================================
+// ПОСЛЕ ОТКРЫТИЯ ЗАКАЗА
+// ============================================================
+
+const _finalRenderOrderDetails =
+    renderOrderDetails;
+
+renderOrderDetails = function (
+    order
+) {
+
+    _finalRenderOrderDetails(
+        order
+    );
+
+    setTimeout(
+        finalRemoveStatusFromOrderModal,
+        0
+    );
+};
+
+
+// ============================================================
+// ПОСЛЕ ОТКРЫТИЯ РЕДАКТИРОВАНИЯ
+// ============================================================
+
+const _finalRenderOrderEditor =
+    renderOrderEditor;
+
+renderOrderEditor = function (
+    order
+) {
+
+    _finalRenderOrderEditor(
+        order
+    );
+
+    setTimeout(
+        finalRemoveStatusFromOrderModal,
+        0
+    );
+};
+
+
+// ============================================================
+// СТИЛИ
+// ============================================================
+
+function finalAddStatusStyles() {
+
+    if (
+        document.getElementById(
+            "finalStatusStyles"
+        )
+    ) {
+        return;
+    }
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+    style.id =
+        "finalStatusStyles";
+
+    style.textContent = `
+
+        .final-status-list-block {
+
+            display: grid;
+
+            grid-template-columns:
+                65px minmax(0, 1fr);
+
+            gap: 8px;
+
+            align-items: center;
+
+            margin-top: 8px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .final-status-label {
+
+            font-size: 12px;
+
+            color: #777;
+        }
+
+
+        .final-order-status-select {
+
+            width: 100%;
+
+            min-width: 0;
+
+            min-height: 38px;
+
+            box-sizing: border-box;
+
+            border-radius: 10px;
+
+            border: 1px solid;
+
+            padding: 7px 30px 7px 10px;
+
+            font-size: 14px;
+
+            font-weight: 700;
+        }
+
+
+        /* Новый */
+
+        .final-status-new {
+
+            background: #e8f3ff !important;
+
+            color: #1769aa !important;
+
+            border-color: #b9d9f5 !important;
+        }
+
+
+        /* Принят */
+
+        .final-status-accepted {
+
+            background: #fff1df !important;
+
+            color: #ad6200 !important;
+
+            border-color: #f2c889 !important;
+        }
+
+
+        /* В печати */
+
+        .final-status-printing {
+
+            background: #f1eaff !important;
+
+            color: #7044b8 !important;
+
+            border-color: #cfbdf1 !important;
+        }
+
+
+        /* Отправлен */
+
+        .final-status-sent {
+
+            background: #e3f8ed !important;
+
+            color: #187f4b !important;
+
+            border-color: #a9ddc0 !important;
+        }
+
+
+        /* Завершён */
+
+        .final-status-completed {
+
+            background: #eeeeee !important;
+
+            color: #555 !important;
+
+            border-color: #cccccc !important;
+        }
+
+
+        /* Отменён */
+
+        .final-status-cancelled {
+
+            background: #ffe9e9 !important;
+
+            color: #bd2929 !important;
+
+            border-color: #efb5b5 !important;
+        }
+
+    `;
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        finalMigrateStatuses();
+
+        finalAddStatusStyles();
+
+        setTimeout(
+            finalRenderStatusesInOrderList,
+            0
+        );
+    }
+);
