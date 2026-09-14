@@ -1,40 +1,43 @@
 // ========================================
-// PRINT APP — ОСНОВНОЙ КОД
+// PRINT APP
+// ========================================
+
+
+// ========================================
+// КАТАЛОГ ПО УМОЛЧАНИЮ
 // ========================================
 
 const DEFAULT_CATALOG = {
+
     diplomas: {
+
         "Диплом УФ — А5": {
-            "1": { sale: 300, cost: 240 },
-            "2": { sale: 300, cost: 240 },
-            "3": { sale: 280, cost: 200 },
+            "1":  { sale: 300, cost: 240 },
+            "3":  { sale: 280, cost: 200 },
             "11": { sale: 260, cost: 190 },
             "21": { sale: 240, cost: 180 },
             "50": { sale: 220, cost: 170 }
         },
 
         "Диплом УФ — А4": {
-            "1": { sale: 470, cost: 420 },
-            "2": { sale: 470, cost: 420 },
-            "3": { sale: 450, cost: 400 },
+            "1":  { sale: 470, cost: 420 },
+            "3":  { sale: 450, cost: 400 },
             "11": { sale: 430, cost: 370 },
             "21": { sale: 410, cost: 350 },
             "50": { sale: 390, cost: 320 }
         },
 
         "Диплом сублимация — А5": {
-            "1": { sale: 300, cost: 240 },
-            "2": { sale: 300, cost: 240 },
-            "3": { sale: 280, cost: 190 },
+            "1":  { sale: 300, cost: 240 },
+            "3":  { sale: 280, cost: 190 },
             "11": { sale: 260, cost: 180 },
             "21": { sale: 240, cost: 170 },
             "50": { sale: 220, cost: 165 }
         },
 
         "Диплом сублимация — А4": {
-            "1": { sale: 470, cost: 400 },
-            "2": { sale: 470, cost: 400 },
-            "3": { sale: 450, cost: 390 },
+            "1":  { sale: 470, cost: 400 },
+            "3":  { sale: 450, cost: 390 },
             "11": { sale: 430, cost: 360 },
             "21": { sale: 410, cost: 340 },
             "50": { sale: 390, cost: 310 }
@@ -42,6 +45,7 @@ const DEFAULT_CATALOG = {
     },
 
     readyCups: {
+
         "Чашка с карабином 300 мл — С/С": {
             sale: 159,
             cost: 159
@@ -71,25 +75,36 @@ const DEFAULT_CATALOG = {
 
 
 // ========================================
-// КАТАЛОГ
+// КАТАЛОГ: ЗАГРУЗКА / СОХРАНЕНИЕ
 // ========================================
 
 function loadCatalog() {
+
     try {
-        const saved = localStorage.getItem("printCatalog");
+
+        const saved =
+            localStorage.getItem("printCatalog");
 
         if (saved) {
             return JSON.parse(saved);
         }
+
     } catch (error) {
-        console.error("Ошибка загрузки каталога:", error);
+
+        console.error(
+            "Ошибка загрузки каталога:",
+            error
+        );
     }
 
-    return JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+    return JSON.parse(
+        JSON.stringify(DEFAULT_CATALOG)
+    );
 }
 
 
 function saveCatalog(catalog) {
+
     localStorage.setItem(
         "printCatalog",
         JSON.stringify(catalog)
@@ -97,621 +112,371 @@ function saveCatalog(catalog) {
 }
 
 
+// ========================================
+// ЦЕНА ДИПЛОМА
+// ========================================
+
 function getDiplomaPrice(product, quantity) {
+
     const catalog = loadCatalog();
 
-    if (
-        !catalog.diplomas ||
-        !catalog.diplomas[product]
-    ) {
+    const item =
+        catalog.diplomas?.[product];
+
+    if (!item) {
+
         return {
             sale: 0,
             cost: 0
         };
     }
 
-    const tiers = catalog.diplomas[product];
-
     let tier = "1";
 
     if (quantity >= 50) {
+
         tier = "50";
+
     } else if (quantity >= 21) {
+
         tier = "21";
+
     } else if (quantity >= 11) {
+
         tier = "11";
+
     } else if (quantity >= 3) {
+
         tier = "3";
     }
 
-    return tiers[tier] || tiers["1"];
+    return item[tier] || item["1"];
 }
 
 
 // ========================================
-// ПОЗИЦИИ ЗАКАЗА
+// ДОБАВЛЕНИЕ ПОЗИЦИИ
 // ========================================
 
-function setupPosition(position) {
+function addPosition() {
+
+    const container =
+        document.getElementById("positions");
+
+    if (!container) return;
+
+    const position =
+        document.createElement("div");
+
+    position.className = "position";
+
+    position.innerHTML = `
+
+        <div class="position-header">
+
+            <strong>
+                Позиция ${container.children.length + 1}
+            </strong>
+
+            <button
+                type="button"
+                class="delete-button"
+                onclick="removePosition(this)"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <label>Категория</label>
+
+        <select
+            class="category"
+            onchange="updateProductOptions(this)"
+        >
+
+            <option value="">
+                Выберите категорию
+            </option>
+
+            <option value="diploma">
+                Дипломы
+            </option>
+
+            <option value="cup_ready">
+                Готовые чашки
+            </option>
+
+            <option value="cup_print">
+                Печать чашка
+            </option>
+
+            <option value="cup_custom">
+                Чашка
+            </option>
+
+            <option value="packaging">
+                Упаковка для чашки
+            </option>
+
+            <option value="designer">
+                Услуги дизайнера
+            </option>
+
+            <option value="urgent">
+                Срочность
+            </option>
+
+        </select>
+
+        <div class="product-area"></div>
+
+        <div class="manual-fields"></div>
+
+        <div class="price-info">
+
+            <div>
+                <span>Цена продажи:</span>
+                <strong class="sale-price">
+                    0 грн
+                </strong>
+            </div>
+
+            <div>
+                <span>Себестоимость:</span>
+                <strong class="cost-price">
+                    0 грн
+                </strong>
+            </div>
+
+            <div>
+                <span>Прибыль:</span>
+                <strong class="profit-price">
+                    0 грн
+                </strong>
+            </div>
+
+        </div>
+    `;
+
+    container.appendChild(position);
+
+    updatePositionNumbers();
+
+    updateOrderTotals();
+}
+
+
+// ========================================
+// УДАЛЕНИЕ ПОЗИЦИИ
+// ========================================
+
+function removePosition(button) {
+
+    const position =
+        button.closest(".position");
+
     if (!position) return;
 
-    const category = position.querySelector(".category");
+    const container =
+        document.getElementById("positions");
 
-    if (!category) return;
+    if (!container) return;
 
-    category.addEventListener("change", () => {
-        renderPositionFields(position);
-        updateOrderTotals();
-    });
+    if (container.children.length <= 1) {
 
-    renderPositionFields(position);
+        clearPosition(position);
+
+    } else {
+
+        position.remove();
+
+    }
+
+    updatePositionNumbers();
+
+    updateOrderTotals();
 }
 
 
-function renderPositionFields(position) {
-    const category = position.querySelector(".category");
+// ========================================
+// НОМЕРА ПОЗИЦИЙ
+// ========================================
 
-    if (!category) return;
+function updatePositionNumbers() {
 
-    let dynamic = position.querySelector(".dynamicFields");
-
-    if (!dynamic) {
-        dynamic = document.createElement("div");
-        dynamic.className = "dynamicFields";
-
-        category.insertAdjacentElement(
-            "afterend",
-            dynamic
+    const positions =
+        document.querySelectorAll(
+            "#positions .position"
         );
+
+    positions.forEach(
+        (position, index) => {
+
+            const title =
+                position.querySelector(
+                    ".position-header strong"
+                );
+
+            if (title) {
+
+                title.textContent =
+                    `Позиция ${index + 1}`;
+            }
+        }
+    );
+}
+
+
+// ========================================
+// ОЧИСТИТЬ ОДНУ ПОЗИЦИЮ
+// ========================================
+
+function clearPosition(position) {
+
+    const category =
+        position.querySelector(".category");
+
+    if (category) {
+        category.value = "";
     }
 
-    const type = category.value;
+    const productArea =
+        position.querySelector(".product-area");
 
-    dynamic.innerHTML = "";
+    const manualFields =
+        position.querySelector(".manual-fields");
 
-    // -----------------------------
+    if (productArea) {
+        productArea.innerHTML = "";
+    }
+
+    if (manualFields) {
+        manualFields.innerHTML = "";
+    }
+}
+
+
+// ========================================
+// ГЛАВНАЯ ФУНКЦИЯ КАТЕГОРИИ
+// ========================================
+
+function updateProductOptions(select) {
+
+    const position =
+        select.closest(".position");
+
+    if (!position) return;
+
+    const type = select.value;
+
+    const productArea =
+        position.querySelector(".product-area");
+
+    const manualFields =
+        position.querySelector(".manual-fields");
+
+    if (!productArea || !manualFields) {
+        return;
+    }
+
+    productArea.innerHTML = "";
+    manualFields.innerHTML = "";
+
+
+    // ------------------------------------
     // ДИПЛОМЫ
-    // -----------------------------
+    // ------------------------------------
 
-    if (type === "diplomas") {
+    if (type === "diploma") {
 
-        const catalog = loadCatalog();
-
-        const products = Object.keys(
-            catalog.diplomas
+        renderDiplomaFields(
+            position
         );
-
-        dynamic.innerHTML = `
-            <label>Вид диплома</label>
-
-            <select class="productSelect">
-                ${products.map(product => `
-                    <option value="${escapeHtml(product)}">
-                        ${escapeHtml(product)}
-                    </option>
-                `).join("")}
-            </select>
-
-            <label>Количество</label>
-
-            <input
-                type="number"
-                class="quantity"
-                min="1"
-                value="1"
-            >
-
-            <div class="manualPrices">
-                <label>Цена продажи за 1 шт.</label>
-
-                <input
-                    type="number"
-                    class="salePrice"
-                    min="0"
-                >
-
-                <label>Себестоимость за 1 шт.</label>
-
-                <input
-                    type="number"
-                    class="costPrice"
-                    min="0"
-                >
-            </div>
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        const productSelect =
-            dynamic.querySelector(".productSelect");
-
-        const quantity =
-            dynamic.querySelector(".quantity");
-
-        const salePrice =
-            dynamic.querySelector(".salePrice");
-
-        const costPrice =
-            dynamic.querySelector(".costPrice");
-
-
-        function updateDiplomaPrices() {
-
-            const product =
-                productSelect.value;
-
-            const qty =
-                Math.max(
-                    1,
-                    Number(quantity.value) || 1
-                );
-
-            const prices =
-                getDiplomaPrice(
-                    product,
-                    qty
-                );
-
-            salePrice.value = prices.sale;
-            costPrice.value = prices.cost;
-
-            updateOrderTotals();
-        }
-
-
-        productSelect.addEventListener(
-            "change",
-            updateDiplomaPrices
-        );
-
-        quantity.addEventListener(
-            "input",
-            updateDiplomaPrices
-        );
-
-        salePrice.addEventListener(
-            "input",
-            updateOrderTotals
-        );
-
-        costPrice.addEventListener(
-            "input",
-            updateOrderTotals
-        );
-
-        updateDiplomaPrices();
 
         return;
     }
 
 
-    // -----------------------------
+    // ------------------------------------
     // ГОТОВЫЕ ЧАШКИ
-    // -----------------------------
+    // ------------------------------------
 
-    if (type === "readyCups") {
+    if (type === "cup_ready") {
 
-        const catalog = loadCatalog();
-
-        const products =
-            Object.keys(
-                catalog.readyCups
-            );
-
-        dynamic.innerHTML = `
-            <label>Вид чашки</label>
-
-            <select class="productSelect">
-                ${products.map(product => `
-                    <option value="${escapeHtml(product)}">
-                        ${escapeHtml(product)}
-                    </option>
-                `).join("")}
-            </select>
-
-            <label>Количество</label>
-
-            <input
-                type="number"
-                class="quantity"
-                min="1"
-                value="1"
-            >
-
-            <label>Цена продажи за 1 шт.</label>
-
-            <input
-                type="number"
-                class="salePrice"
-                min="0"
-            >
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        const productSelect =
-            dynamic.querySelector(".productSelect");
-
-        const quantity =
-            dynamic.querySelector(".quantity");
-
-        const salePrice =
-            dynamic.querySelector(".salePrice");
-
-
-        function updateCupPrices() {
-
-            const product =
-                productSelect.value;
-
-            const item =
-                catalog.readyCups[product];
-
-            salePrice.value =
-                item ? item.sale : 0;
-
-            updateOrderTotals();
-        }
-
-
-        productSelect.addEventListener(
-            "change",
-            updateCupPrices
+        renderReadyCupFields(
+            position
         );
-
-        quantity.addEventListener(
-            "input",
-            updateOrderTotals
-        );
-
-        salePrice.addEventListener(
-            "input",
-            updateOrderTotals
-        );
-
-        updateCupPrices();
 
         return;
     }
 
 
-    // -----------------------------
+    // ------------------------------------
     // ПЕЧАТЬ НА ЧАШКЕ
-    // -----------------------------
+    // ------------------------------------
 
-    if (type === "cupPrint") {
+    if (type === "cup_print") {
 
-        dynamic.innerHTML = `
-            <label>Количество</label>
-
-            <input
-                type="number"
-                class="quantity"
-                min="1"
-                value="1"
-            >
-
-            <label>Цена печати за 1 шт.</label>
-
-            <input
-                type="number"
-                class="salePrice"
-                min="0"
-                value="0"
-                placeholder="Введите сумму"
-            >
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        dynamic
-            .querySelector(".quantity")
-            .addEventListener(
-                "input",
-                updateOrderTotals
-            );
-
-        dynamic
-            .querySelector(".salePrice")
-            .addEventListener(
-                "input",
-                updateOrderTotals
-            );
+        renderCupPrintFields(
+            position
+        );
 
         return;
     }
 
 
-    // -----------------------------
+    // ------------------------------------
     // ЧАШКА
-    // -----------------------------
+    // ------------------------------------
 
-    if (type === "cup") {
+    if (type === "cup_custom") {
 
-        dynamic.innerHTML = `
-            <label>Описание</label>
-
-            <input
-                type="text"
-                class="description"
-                placeholder="Например: белая чашка"
-            >
-
-            <label>Количество</label>
-
-            <input
-                type="number"
-                class="quantity"
-                min="1"
-                value="1"
-            >
-
-            <label>Цена продажи за 1 шт.</label>
-
-            <input
-                type="number"
-                class="salePrice"
-                min="0"
-            >
-
-            <label>Себестоимость за 1 шт.</label>
-
-            <input
-                type="number"
-                class="costPrice"
-                min="0"
-            >
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        addCalculationListeners(dynamic);
+        renderCustomCupFields(
+            position
+        );
 
         return;
     }
 
 
-    // -----------------------------
+    // ------------------------------------
     // УПАКОВКА
-    // -----------------------------
+    // ------------------------------------
 
     if (type === "packaging") {
 
-        dynamic.innerHTML = `
-            <label>Вид упаковки</label>
-
-            <input
-                type="text"
-                class="description"
-                placeholder="Например: коробка"
-            >
-
-            <label>Количество</label>
-
-            <input
-                type="number"
-                class="quantity"
-                min="1"
-                value="1"
-            >
-
-            <label>Цена продажи за 1 шт.</label>
-
-            <input
-                type="number"
-                class="salePrice"
-                min="0"
-            >
-
-            <label>Себестоимость за 1 шт.</label>
-
-            <input
-                type="number"
-                class="costPrice"
-                min="0"
-            >
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        addCalculationListeners(dynamic);
+        renderPackagingFields(
+            position
+        );
 
         return;
     }
 
 
-    // -----------------------------
+    // ------------------------------------
     // ДИЗАЙНЕР
-    // -----------------------------
+    // ------------------------------------
 
     if (type === "designer") {
 
-        dynamic.innerHTML = `
-            <label>Описание</label>
-
-            <input
-                type="text"
-                class="description"
-                placeholder="Например: разработка макета"
-            >
-
-            <label>Количество</label>
-
-            <input
-                type="number"
-                class="quantity"
-                min="1"
-                value="1"
-            >
-
-            <label>Стоимость</label>
-
-            <input
-                type="number"
-                class="salePrice"
-                min="0"
-                value="0"
-            >
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        dynamic
-            .querySelector(".quantity")
-            .addEventListener(
-                "input",
-                updateOrderTotals
-            );
-
-        dynamic
-            .querySelector(".salePrice")
-            .addEventListener(
-                "input",
-                updateOrderTotals
-            );
+        renderDesignerFields(
+            position
+        );
 
         return;
     }
 
 
-    // -----------------------------
+    // ------------------------------------
     // СРОЧНОСТЬ
-    // -----------------------------
+    // ------------------------------------
 
     if (type === "urgent") {
 
-        dynamic.innerHTML = `
-            <label>Описание</label>
-
-            <input
-                type="text"
-                class="description"
-                placeholder="Например: срочное изготовление"
-            >
-
-            <label>Стоимость</label>
-
-            <input
-                type="number"
-                class="salePrice"
-                min="0"
-                value="0"
-            >
-
-            <div class="positionTotals">
-                <div>
-                    Продажа:
-                    <strong class="lineSale">0 грн</strong>
-                </div>
-
-                <div>
-                    Себестоимость:
-                    <strong class="lineCost">0 грн</strong>
-                </div>
-
-                <div>
-                    Прибыль:
-                    <strong class="lineProfit">0 грн</strong>
-                </div>
-            </div>
-        `;
-
-        dynamic
-            .querySelector(".salePrice")
-            .addEventListener(
-                "input",
-                updateOrderTotals
-            );
+        renderUrgentFields(
+            position
+        );
 
         return;
     }
@@ -719,37 +484,566 @@ function renderPositionFields(position) {
 
 
 // ========================================
-// СЛУШАТЕЛИ РАСЧЁТА
+// ДИПЛОМЫ
 // ========================================
 
-function addCalculationListeners(container) {
+function renderDiplomaFields(position) {
 
-    const inputs =
-        container.querySelectorAll(
-            ".quantity, .salePrice, .costPrice"
+    const productArea =
+        position.querySelector(
+            ".product-area"
         );
 
-    inputs.forEach(input => {
-
-        input.addEventListener(
-            "input",
-            updateOrderTotals
+    const manual =
+        position.querySelector(
+            ".manual-fields"
         );
 
-    });
+    const catalog =
+        loadCatalog();
+
+    const products =
+        Object.keys(
+            catalog.diplomas
+        );
+
+    productArea.innerHTML = `
+
+        <label>
+            Вид диплома
+        </label>
+
+        <select class="product-select">
+
+            ${products.map(
+                product => `
+                    <option value="${escapeHtml(product)}">
+                        ${escapeHtml(product)}
+                    </option>
+                `
+            ).join("")}
+
+        </select>
+
+        <label>
+            Количество
+        </label>
+
+        <input
+            type="number"
+            class="quantity"
+            min="1"
+            value="1"
+        >
+    `;
+
+    manual.innerHTML = `
+
+        <label>
+            Цена продажи за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+        >
+
+        <label>
+            Себестоимость за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="cost-input"
+            min="0"
+        >
+    `;
+
+
+    const product =
+        productArea.querySelector(
+            ".product-select"
+        );
+
+    const quantity =
+        productArea.querySelector(
+            ".quantity"
+        );
+
+    const sale =
+        manual.querySelector(
+            ".sale-input"
+        );
+
+    const cost =
+        manual.querySelector(
+            ".cost-input"
+        );
+
+
+    function updatePrice() {
+
+        const prices =
+            getDiplomaPrice(
+                product.value,
+                Number(quantity.value) || 1
+            );
+
+        sale.value =
+            prices.sale;
+
+        cost.value =
+            prices.cost;
+
+        updateOrderTotals();
+    }
+
+
+    product.addEventListener(
+        "change",
+        updatePrice
+    );
+
+    quantity.addEventListener(
+        "input",
+        updatePrice
+    );
+
+    sale.addEventListener(
+        "input",
+        updateOrderTotals
+    );
+
+    cost.addEventListener(
+        "input",
+        updateOrderTotals
+    );
+
+
+    updatePrice();
 }
 
 
 // ========================================
-// РАСЧЁТ ОДНОЙ ПОЗИЦИИ
+// ГОТОВЫЕ ЧАШКИ
+// ========================================
+
+function renderReadyCupFields(position) {
+
+    const productArea =
+        position.querySelector(
+            ".product-area"
+        );
+
+    const manual =
+        position.querySelector(
+            ".manual-fields"
+        );
+
+    const catalog =
+        loadCatalog();
+
+    const products =
+        Object.keys(
+            catalog.readyCups
+        );
+
+
+    productArea.innerHTML = `
+
+        <label>
+            Вид чашки
+        </label>
+
+        <select class="product-select">
+
+            ${products.map(
+                product => `
+                    <option value="${escapeHtml(product)}">
+                        ${escapeHtml(product)}
+                    </option>
+                `
+            ).join("")}
+
+        </select>
+
+        <label>
+            Количество
+        </label>
+
+        <input
+            type="number"
+            class="quantity"
+            min="1"
+            value="1"
+        >
+    `;
+
+
+    manual.innerHTML = `
+
+        <label>
+            Цена продажи за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+        >
+    `;
+
+
+    const product =
+        productArea.querySelector(
+            ".product-select"
+        );
+
+    const quantity =
+        productArea.querySelector(
+            ".quantity"
+        );
+
+    const sale =
+        manual.querySelector(
+            ".sale-input"
+        );
+
+
+    function updatePrice() {
+
+        const item =
+            catalog.readyCups[
+                product.value
+            ];
+
+        sale.value =
+            item ? item.sale : 0;
+
+        updateOrderTotals();
+    }
+
+
+    product.addEventListener(
+        "change",
+        updatePrice
+    );
+
+    quantity.addEventListener(
+        "input",
+        updateOrderTotals
+    );
+
+    sale.addEventListener(
+        "input",
+        updateOrderTotals
+    );
+
+
+    updatePrice();
+}
+
+
+// ========================================
+// ПЕЧАТЬ НА ЧАШКЕ
+// ========================================
+
+function renderCupPrintFields(position) {
+
+    const manual =
+        position.querySelector(
+            ".manual-fields"
+        );
+
+    manual.innerHTML = `
+
+        <label>
+            Количество
+        </label>
+
+        <input
+            type="number"
+            class="quantity"
+            min="1"
+            value="1"
+        >
+
+        <label>
+            Цена печати за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+            value="0"
+            placeholder="Введите сумму"
+        >
+    `;
+
+
+    addInputListeners(
+        manual
+    );
+}
+
+
+// ========================================
+// ОБЫЧНАЯ ЧАШКА
+// ========================================
+
+function renderCustomCupFields(position) {
+
+    const manual =
+        position.querySelector(
+            ".manual-fields"
+        );
+
+    manual.innerHTML = `
+
+        <label>
+            Описание
+        </label>
+
+        <input
+            type="text"
+            class="description"
+            placeholder="Например: белая чашка"
+        >
+
+        <label>
+            Количество
+        </label>
+
+        <input
+            type="number"
+            class="quantity"
+            min="1"
+            value="1"
+        >
+
+        <label>
+            Цена продажи за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+        >
+
+        <label>
+            Себестоимость за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="cost-input"
+            min="0"
+        >
+    `;
+
+
+    addInputListeners(
+        manual
+    );
+}
+
+
+// ========================================
+// УПАКОВКА
+// ========================================
+
+function renderPackagingFields(position) {
+
+    const manual =
+        position.querySelector(
+            ".manual-fields"
+        );
+
+    manual.innerHTML = `
+
+        <label>
+            Вид упаковки
+        </label>
+
+        <input
+            type="text"
+            class="description"
+            placeholder="Например: коробка"
+        >
+
+        <label>
+            Количество
+        </label>
+
+        <input
+            type="number"
+            class="quantity"
+            min="1"
+            value="1"
+        >
+
+        <label>
+            Цена продажи за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+        >
+
+        <label>
+            Себестоимость за 1 шт.
+        </label>
+
+        <input
+            type="number"
+            class="cost-input"
+            min="0"
+        >
+    `;
+
+
+    addInputListeners(
+        manual
+    );
+}
+
+
+// ========================================
+// ДИЗАЙНЕР
+// ========================================
+
+function renderDesignerFields(position) {
+
+    const manual =
+        position.querySelector(
+            ".manual-fields"
+        );
+
+    manual.innerHTML = `
+
+        <label>
+            Описание
+        </label>
+
+        <input
+            type="text"
+            class="description"
+            placeholder="Например: разработка макета"
+        >
+
+        <label>
+            Количество
+        </label>
+
+        <input
+            type="number"
+            class="quantity"
+            min="1"
+            value="1"
+        >
+
+        <label>
+            Стоимость
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+            value="0"
+        >
+    `;
+
+
+    addInputListeners(
+        manual
+    );
+}
+
+
+// ========================================
+// СРОЧНОСТЬ
+// ========================================
+
+function renderUrgentFields(position) {
+
+    const manual =
+        position.querySelector(
+            ".manual-fields"
+        );
+
+    manual.innerHTML = `
+
+        <label>
+            Описание
+        </label>
+
+        <input
+            type="text"
+            class="description"
+            placeholder="Например: срочное изготовление"
+        >
+
+        <label>
+            Стоимость
+        </label>
+
+        <input
+            type="number"
+            class="sale-input"
+            min="0"
+            value="0"
+        >
+    `;
+
+
+    addInputListeners(
+        manual
+    );
+}
+
+
+// ========================================
+// ОБРАБОТКА INPUT
+// ========================================
+
+function addInputListeners(container) {
+
+    container
+        .querySelectorAll(
+            "input"
+        )
+        .forEach(
+            input => {
+
+                input.addEventListener(
+                    "input",
+                    updateOrderTotals
+                );
+
+            }
+        );
+}
+
+
+// ========================================
+// РАСЧЁТ ПОЗИЦИИ
 // ========================================
 
 function calculatePosition(position) {
 
     const category =
-        position.querySelector(".category");
+        position.querySelector(
+            ".category"
+        );
 
     if (!category) {
+
         return {
             sale: 0,
             cost: 0,
@@ -757,53 +1051,69 @@ function calculatePosition(position) {
         };
     }
 
-    const type = category.value;
 
-    const dynamic =
-        position.querySelector(".dynamicFields");
+    const type =
+        category.value;
 
-    if (!dynamic) {
-        return {
-            sale: 0,
-            cost: 0,
-            profit: 0
-        };
-    }
+
+    const quantityInput =
+        position.querySelector(
+            ".quantity"
+        );
 
     const quantity =
         Math.max(
             1,
             Number(
-                dynamic.querySelector(".quantity")?.value
+                quantityInput?.value
             ) || 1
         );
 
-    const salePrice =
+
+    const saleInput =
+        position.querySelector(
+            ".sale-input"
+        );
+
+    const costInput =
+        position.querySelector(
+            ".cost-input"
+        );
+
+
+    const salePerUnit =
         Number(
-            dynamic.querySelector(".salePrice")?.value
+            saleInput?.value
         ) || 0;
 
-    const costPrice =
+
+    const costPerUnit =
         Number(
-            dynamic.querySelector(".costPrice")?.value
+            costInput?.value
         ) || 0;
+
 
     let sale = 0;
     let cost = 0;
 
-    // Дипломы
-    if (type === "diplomas") {
 
-        sale = salePrice * quantity;
-        cost = costPrice * quantity;
+    // Дипломы
+    if (type === "diploma") {
+
+        sale =
+            salePerUnit * quantity;
+
+        cost =
+            costPerUnit * quantity;
     }
 
+
     // Готовые чашки
-    else if (type === "readyCups") {
+    else if (type === "cup_ready") {
 
         const product =
-            dynamic.querySelector(
-                ".productSelect"
+            position.querySelector(
+                ".product-select"
             )?.value;
 
         const catalog =
@@ -812,66 +1122,118 @@ function calculatePosition(position) {
         const item =
             catalog.readyCups?.[product];
 
+
+        sale =
+            salePerUnit * quantity;
+
         cost =
             (item?.cost || 0) * quantity;
-
-        sale =
-            salePrice * quantity;
     }
 
+
     // Печать чашки
-    else if (type === "cupPrint") {
+    else if (type === "cup_print") {
 
         sale =
-            salePrice * quantity;
+            salePerUnit * quantity;
 
         cost = 0;
     }
 
-    // Обычная чашка
-    else if (type === "cup") {
+
+    // Чашка
+    else if (type === "cup_custom") {
 
         sale =
-            salePrice * quantity;
+            salePerUnit * quantity;
 
         cost =
-            costPrice * quantity;
+            costPerUnit * quantity;
     }
+
 
     // Упаковка
     else if (type === "packaging") {
 
         sale =
-            salePrice * quantity;
+            salePerUnit * quantity;
 
         cost =
-            costPrice * quantity;
+            costPerUnit * quantity;
     }
+
 
     // Дизайнер
     else if (type === "designer") {
 
         sale =
-            salePrice * quantity;
+            salePerUnit * quantity;
 
         cost = 0;
     }
+
 
     // Срочность
     else if (type === "urgent") {
 
-        sale = salePrice;
+        sale =
+            salePerUnit;
+
         cost = 0;
     }
 
-    const profit =
-        sale - cost;
 
     return {
         sale,
         cost,
-        profit
+        profit: sale - cost
     };
+}
+
+
+// ========================================
+// ОБНОВЛЕНИЕ ЦЕНЫ ПОЗИЦИИ
+// ========================================
+
+function updatePositionPrice(position) {
+
+    const result =
+        calculatePosition(position);
+
+
+    const sale =
+        position.querySelector(
+            ".sale-price"
+        );
+
+    const cost =
+        position.querySelector(
+            ".cost-price"
+        );
+
+    const profit =
+        position.querySelector(
+            ".profit-price"
+        );
+
+
+    if (sale) {
+
+        sale.textContent =
+            `${result.sale} грн`;
+    }
+
+    if (cost) {
+
+        cost.textContent =
+            `${result.cost} грн`;
+    }
+
+    if (profit) {
+
+        profit.textContent =
+            `${result.profit} грн`;
+    }
 }
 
 
@@ -886,50 +1248,33 @@ function updateOrderTotals() {
             "#positions .position"
         );
 
+
     let totalSale = 0;
     let totalCost = 0;
 
-    positions.forEach(position => {
 
-        const result =
-            calculatePosition(position);
+    positions.forEach(
+        position => {
 
-        totalSale += result.sale;
-        totalCost += result.cost;
+            const result =
+                calculatePosition(
+                    position
+                );
 
 
-        const saleElement =
-            position.querySelector(
-                ".lineSale"
+            totalSale +=
+                result.sale;
+
+            totalCost +=
+                result.cost;
+
+
+            updatePositionPrice(
+                position
             );
 
-        const costElement =
-            position.querySelector(
-                ".lineCost"
-            );
-
-        const profitElement =
-            position.querySelector(
-                ".lineProfit"
-            );
-
-
-        if (saleElement) {
-            saleElement.textContent =
-                `${result.sale} грн`;
         }
-
-        if (costElement) {
-            costElement.textContent =
-                `${result.cost} грн`;
-        }
-
-        if (profitElement) {
-            profitElement.textContent =
-                `${result.profit} грн`;
-        }
-
-    });
+    );
 
 
     const totalProfit =
@@ -953,16 +1298,19 @@ function updateOrderTotals() {
 
 
     if (totalSaleElement) {
+
         totalSaleElement.textContent =
             `${totalSale} грн`;
     }
 
     if (totalCostElement) {
+
         totalCostElement.textContent =
             `${totalCost} грн`;
     }
 
     if (totalProfitElement) {
+
         totalProfitElement.textContent =
             `${totalProfit} грн`;
     }
@@ -970,123 +1318,7 @@ function updateOrderTotals() {
 
 
 // ========================================
-// ДОБАВИТЬ ПОЗИЦИЮ
-// ========================================
-
-function addNewPosition() {
-
-    const positions =
-        document.getElementById(
-            "positions"
-        );
-
-    if (!positions) return;
-
-    const existing =
-        positions.querySelectorAll(
-            ".position"
-        );
-
-    if (existing.length === 0) return;
-
-    const first =
-        existing[0];
-
-    const newPosition =
-        first.cloneNode(true);
-
-
-    // Удаляем динамические поля
-    const dynamic =
-        newPosition.querySelector(
-            ".dynamicFields"
-        );
-
-    if (dynamic) {
-        dynamic.remove();
-    }
-
-
-    // Возвращаем категорию
-    const category =
-        newPosition.querySelector(
-            ".category"
-        );
-
-    if (category) {
-        category.selectedIndex = 0;
-    }
-
-
-    // Удаляем старые обработчики невозможно,
-    // поэтому клонирование безопаснее делать
-    // через чистый HTML
-    newPosition
-        .querySelectorAll(
-            "input"
-        )
-        .forEach(input => {
-            input.value = "";
-        });
-
-
-    positions.appendChild(
-        newPosition
-    );
-
-    setupPosition(
-        newPosition
-    );
-
-    updateOrderTotals();
-}
-
-
-// ========================================
-// КНОПКА "+ ДОБАВИТЬ ПОЗИЦИЮ"
-// ========================================
-
-function setupAddPositionButton() {
-
-    const buttons =
-        document.querySelectorAll(
-            "button"
-        );
-
-    buttons.forEach(button => {
-
-        if (
-            button.dataset.positionButton === "true"
-        ) {
-            return;
-        }
-
-        const text =
-            button.textContent
-                .trim()
-                .toLowerCase();
-
-        if (
-            text.includes(
-                "добавить позицию"
-            )
-        ) {
-
-            button.dataset.positionButton =
-                "true";
-
-            button.addEventListener(
-                "click",
-                addNewPosition
-            );
-        }
-
-    });
-}
-
-
-// ========================================
-// ПОЛУЧЕНИЕ ПОЗИЦИЙ ДЛЯ СОХРАНЕНИЯ
+// ПОЛУЧЕНИЕ ПОЗИЦИЙ ЗАКАЗА
 // ========================================
 
 function getOrderPositions() {
@@ -1096,75 +1328,121 @@ function getOrderPositions() {
             "#positions .position"
         );
 
+
     return Array.from(
         positions
-    ).map(position => {
+    )
+        .map(position => {
 
-        const category =
-            position.querySelector(
-                ".category"
-            );
+            const category =
+                position.querySelector(
+                    ".category"
+                );
 
-        const dynamic =
-            position.querySelector(
-                ".dynamicFields"
-            );
-
-        if (!category || !dynamic) {
-            return null;
-        }
-
-        const type =
-            category.value;
-
-        const result =
-            calculatePosition(position);
-
-        const quantity =
-            Number(
-                dynamic.querySelector(
-                    ".quantity"
-                )?.value
-            ) || 1;
-
-        const description =
-            dynamic.querySelector(
-                ".description"
-            )?.value || "";
+            if (
+                !category ||
+                !category.value
+            ) {
+                return null;
+            }
 
 
-        const product =
-            dynamic.querySelector(
-                ".productSelect"
-            )?.value || "";
+            const type =
+                category.value;
 
 
-        return {
-            type,
-            product,
-            description,
-            quantity,
+            const result =
+                calculatePosition(
+                    position
+                );
 
-            salePerUnit:
+
+            const quantity =
+                Math.max(
+                    1,
+                    Number(
+                        position.querySelector(
+                            ".quantity"
+                        )?.value
+                    ) || 1
+                );
+
+
+            const product =
+                position.querySelector(
+                    ".product-select"
+                )?.value || "";
+
+
+            const description =
+                position.querySelector(
+                    ".description"
+                )?.value || "";
+
+
+            const salePerUnit =
                 Number(
-                    dynamic.querySelector(
-                        ".salePrice"
+                    position.querySelector(
+                        ".sale-input"
                     )?.value
-                ) || 0,
+                ) || 0;
 
-            costPerUnit:
+
+            const costPerUnit =
                 Number(
-                    dynamic.querySelector(
-                        ".costPrice"
+                    position.querySelector(
+                        ".cost-input"
                     )?.value
-                ) || 0,
+                ) || 0;
 
-            sale: result.sale,
-            cost: result.cost,
-            profit: result.profit
-        };
 
-    }).filter(Boolean);
+            return {
+
+                type,
+
+                product,
+
+                description,
+
+                quantity,
+
+                salePerUnit,
+
+                costPerUnit,
+
+                sale:
+                    result.sale,
+
+                cost:
+                    result.cost,
+
+                profit:
+                    result.profit
+            };
+
+        })
+        .filter(Boolean);
+}
+
+
+// ========================================
+// ЗАКАЗЫ
+// ========================================
+
+function getOrders() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "printOrders"
+            ) || "[]"
+        );
+
+    } catch {
+
+        return [];
+    }
 }
 
 
@@ -1184,9 +1462,12 @@ function saveOrder() {
         getOrderPositions();
 
 
-    if (positions.length === 0) {
+    if (
+        positions.length === 0
+    ) {
+
         alert(
-            "Добавьте хотя бы одну позицию."
+            "Выберите категорию хотя бы для одной позиции."
         );
 
         return;
@@ -1197,9 +1478,14 @@ function saveOrder() {
         positions.reduce(
             (sum, item) => {
 
-                sum.sale += item.sale;
-                sum.cost += item.cost;
-                sum.profit += item.profit;
+                sum.sale +=
+                    item.sale;
+
+                sum.cost +=
+                    item.cost;
+
+                sum.profit +=
+                    item.profit;
 
                 return sum;
 
@@ -1249,7 +1535,9 @@ function saveOrder() {
 
     localStorage.setItem(
         "printOrders",
-        JSON.stringify(orders)
+        JSON.stringify(
+            orders
+        )
     );
 
 
@@ -1268,67 +1556,108 @@ function saveOrder() {
 
 function clearOrder() {
 
-    const positions =
+    const container =
         document.getElementById(
             "positions"
         );
 
-    if (!positions) return;
+    if (!container) return;
 
 
-    const first =
-        positions.querySelector(
-            ".position"
-        );
+    container.innerHTML = `
 
+        <div class="position">
 
-    if (!first) return;
+            <div class="position-header">
 
+                <strong>
+                    Позиция 1
+                </strong>
 
-    // Оставляем только первую позицию
-    positions.innerHTML = "";
+                <button
+                    type="button"
+                    class="delete-button"
+                    onclick="removePosition(this)"
+                >
+                    ×
+                </button>
 
+            </div>
 
-    const clean =
-        first.cloneNode(false);
+            <label>
+                Категория
+            </label>
 
+            <select
+                class="category"
+                onchange="updateProductOptions(this)"
+            >
 
-    clean.innerHTML = `
-        <select class="category">
-            <option value="diplomas">
-                Дипломы
-            </option>
+                <option value="">
+                    Выберите категорию
+                </option>
 
-            <option value="readyCups">
-                Готовые чашки
-            </option>
+                <option value="diploma">
+                    Дипломы
+                </option>
 
-            <option value="cupPrint">
-                Печать чашка
-            </option>
+                <option value="cup_ready">
+                    Готовые чашки
+                </option>
 
-            <option value="cup">
-                Чашка
-            </option>
+                <option value="cup_print">
+                    Печать чашка
+                </option>
 
-            <option value="packaging">
-                Упаковка для чашки
-            </option>
+                <option value="cup_custom">
+                    Чашка
+                </option>
 
-            <option value="designer">
-                Услуги дизайнера
-            </option>
+                <option value="packaging">
+                    Упаковка для чашки
+                </option>
 
-            <option value="urgent">
-                Срочность
-            </option>
-        </select>
+                <option value="designer">
+                    Услуги дизайнера
+                </option>
+
+                <option value="urgent">
+                    Срочность
+                </option>
+
+            </select>
+
+            <div class="product-area"></div>
+
+            <div class="manual-fields"></div>
+
+            <div class="price-info">
+
+                <div>
+                    <span>Цена продажи:</span>
+                    <strong class="sale-price">
+                        0 грн
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Себестоимость:</span>
+                    <strong class="cost-price">
+                        0 грн
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Прибыль:</span>
+                    <strong class="profit-price">
+                        0 грн
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
     `;
-
-
-    positions.appendChild(
-        clean
-    );
 
 
     const client =
@@ -1341,186 +1670,143 @@ function clearOrder() {
     }
 
 
-    setupPosition(
-        clean
-    );
-
     updateOrderTotals();
 }
 
 
 // ========================================
-// ЗАКАЗЫ
+// ЭКРАН ЗАКАЗОВ
 // ========================================
 
-function getOrders() {
-
-    try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                "printOrders"
-            ) || "[]"
-        );
-
-    } catch {
-
-        return [];
-    }
-}
-
-
 function openOrders() {
+
+    hideExtraScreen();
+
+    const screen =
+        getExtraScreen();
+
 
     const orders =
         getOrders();
 
 
     let html = `
+
         <div class="catalogScreen">
 
-            <h2>Заказы</h2>
-
             <button
-                class="backToOrder"
                 type="button"
+                class="backToOrder"
+                onclick="showOrderScreen()"
             >
                 ← Новый заказ
             </button>
 
-            <div id="ordersList">
+            <h2>
+                Заказы
+            </h2>
     `;
 
 
     if (orders.length === 0) {
 
         html += `
+
             <div class="emptyOrders">
                 Пока нет сохранённых заказов.
             </div>
+
         `;
 
     } else {
 
-        orders.forEach(order => {
+        orders.forEach(
+            order => {
 
-            const date =
-                new Date(
-                    order.date
-                ).toLocaleString(
-                    "uk-UA"
-                );
+                const date =
+                    new Date(
+                        order.date
+                    ).toLocaleString(
+                        "uk-UA"
+                    );
 
 
-            html += `
-                <div
-                    class="orderCard"
-                    data-id="${order.id}"
-                >
+                html += `
 
-                    <div class="orderTop">
-                        <strong>
-                            Заказ №${order.number}
-                        </strong>
+                    <div
+                        class="orderCard"
+                    >
 
-                        <span>
-                            ${date}
-                        </span>
-                    </div>
+                        <div class="orderTop">
 
-                    <div>
-                        ${
-                            escapeHtml(
+                            <strong>
+                                Заказ №${order.number}
+                            </strong>
+
+                            <span>
+                                ${date}
+                            </span>
+
+                        </div>
+
+                        <div>
+                            ${escapeHtml(
                                 order.client ||
                                 "Клиент не указан"
-                            )
-                        }
+                            )}
+                        </div>
+
+                        <div>
+                            Позиции:
+                            ${order.positions.length}
+                        </div>
+
+                        <div class="orderMoney">
+                            Продажа:
+                            <strong>
+                                ${order.totalSale} грн
+                            </strong>
+                        </div>
+
+                        <div>
+                            Себестоимость:
+                            ${order.totalCost} грн
+                        </div>
+
+                        <div>
+                            Прибыль:
+                            <strong>
+                                ${order.totalProfit} грн
+                            </strong>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="viewOrder"
+                            onclick="openOrderDetails(${order.id})"
+                        >
+                            Открыть
+                        </button>
+
+                        <button
+                            type="button"
+                            class="deleteOrder"
+                            onclick="deleteOrder(${order.id})"
+                        >
+                            Удалить
+                        </button>
+
                     </div>
-
-                    <div>
-                        Позиции:
-                        ${order.positions.length}
-                    </div>
-
-                    <div class="orderMoney">
-                        Продажа:
-                        <strong>
-                            ${order.totalSale} грн
-                        </strong>
-                    </div>
-
-                    <div>
-                        Себестоимость:
-                        ${order.totalCost} грн
-                    </div>
-
-                    <div>
-                        Прибыль:
-                        <strong>
-                            ${order.totalProfit} грн
-                        </strong>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="viewOrder"
-                        data-id="${order.id}"
-                    >
-                        Открыть
-                    </button>
-
-                    <button
-                        type="button"
-                        class="deleteOrder"
-                        data-id="${order.id}"
-                    >
-                        Удалить
-                    </button>
-
-                </div>
-            `;
-        });
+                `;
+            }
+        );
     }
 
 
     html += `
-            </div>
+
         </div>
     `;
-
-
-    const positions =
-        document.getElementById(
-            "positions"
-        );
-
-
-    if (positions) {
-        positions.style.display =
-            "none";
-    }
-
-
-    let screen =
-        document.getElementById(
-            "extraScreen"
-        );
-
-
-    if (!screen) {
-
-        screen =
-            document.createElement(
-                "div"
-            );
-
-        screen.id =
-            "extraScreen";
-
-        document.body.appendChild(
-            screen
-        );
-    }
 
 
     screen.innerHTML =
@@ -1528,68 +1814,6 @@ function openOrders() {
 
     screen.style.display =
         "block";
-
-
-    document
-        .querySelector(".backToOrder")
-        ?.addEventListener(
-            "click",
-            () => {
-
-                screen.style.display =
-                    "none";
-
-                if (positions) {
-                    positions.style.display =
-                        "";
-                }
-
-            }
-        );
-
-
-    screen
-        .querySelectorAll(
-            ".viewOrder"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    openOrderDetails(
-                        Number(
-                            button.dataset.id
-                        )
-                    );
-
-                }
-            );
-
-        });
-
-
-    screen
-        .querySelectorAll(
-            ".deleteOrder"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    deleteOrder(
-                        Number(
-                            button.dataset.id
-                        )
-                    );
-
-                }
-            );
-
-        });
 }
 
 
@@ -1601,19 +1825,26 @@ function openOrderDetails(id) {
 
     const order =
         getOrders().find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (!order) return;
 
 
+    const screen =
+        getExtraScreen();
+
+
     let html = `
+
         <div class="catalogScreen">
 
             <button
                 type="button"
                 class="backToOrders"
+                onclick="openOrders()"
             >
                 ← Все заказы
             </button>
@@ -1623,14 +1854,19 @@ function openOrderDetails(id) {
             </h2>
 
             <p>
-                <strong>Клиент:</strong>
+                <strong>
+                    Клиент:
+                </strong>
+
                 ${escapeHtml(
                     order.client ||
                     "Не указан"
                 )}
             </p>
 
-            <h3>Позиции</h3>
+            <h3>
+                Позиции
+            </h3>
     `;
 
 
@@ -1640,10 +1876,13 @@ function openOrderDetails(id) {
             let title =
                 item.product ||
                 item.description ||
-                "Позиция";
+                getCategoryName(
+                    item.type
+                );
 
 
             html += `
+
                 <div class="orderCard">
 
                     <strong>
@@ -1678,9 +1917,12 @@ function openOrderDetails(id) {
 
 
     html += `
+
             <div class="orderCard">
 
-                <strong>Итого</strong>
+                <strong>
+                    Итого
+                </strong>
 
                 <div>
                     Продажа:
@@ -1703,27 +1945,11 @@ function openOrderDetails(id) {
     `;
 
 
-    const screen =
-        document.getElementById(
-            "extraScreen"
-        );
-
-
-    if (!screen) return;
-
-
     screen.innerHTML =
         html;
 
-
-    screen
-        .querySelector(
-            ".backToOrders"
-        )
-        ?.addEventListener(
-            "click",
-            openOrders
-        );
+    screen.style.display =
+        "block";
 }
 
 
@@ -1751,7 +1977,9 @@ function deleteOrder(id) {
 
     localStorage.setItem(
         "printOrders",
-        JSON.stringify(orders)
+        JSON.stringify(
+            orders
+        )
     );
 
 
@@ -1760,141 +1988,31 @@ function deleteOrder(id) {
 
 
 // ========================================
-// НАВИГАЦИЯ
-// ========================================
-
-function setupNavigation() {
-
-    const buttons =
-        document.querySelectorAll(
-            ".bottom-nav button, nav button"
-        );
-
-
-    buttons.forEach(button => {
-
-        const text =
-            button.textContent
-                .trim()
-                .toLowerCase();
-
-
-        if (
-            text.includes("заказ")
-        ) {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const screen =
-                        document.getElementById(
-                            "extraScreen"
-                        );
-
-                    if (screen) {
-                        screen.style.display =
-                            "none";
-                    }
-
-                    const positions =
-                        document.getElementById(
-                            "positions"
-                        );
-
-                    if (positions) {
-                        positions.style.display =
-                            "";
-                    }
-
-                }
-            );
-
-        }
-
-
-        if (
-            text.includes("каталог")
-        ) {
-
-            button.addEventListener(
-                "click",
-                openCatalog
-            );
-
-        }
-
-
-        if (
-            text.includes("заказы")
-        ) {
-
-            button.addEventListener(
-                "click",
-                openOrders
-            );
-
-        }
-
-    });
-}
-
-
-// ========================================
-// КАТАЛОГ
+// ЭКРАН КАТАЛОГА
 // ========================================
 
 function openCatalog() {
 
-    const positions =
-        document.getElementById(
-            "positions"
-        );
-
-    if (positions) {
-        positions.style.display =
-            "none";
-    }
+    const screen =
+        getExtraScreen();
 
 
-    let screen =
-        document.getElementById(
-            "extraScreen"
-        );
-
-
-    if (!screen) {
-
-        screen =
-            document.createElement(
-                "div"
-            );
-
-        screen.id =
-            "extraScreen";
-
-        document.body.appendChild(
-            screen
-        );
-    }
+    renderCatalog();
 
 
     screen.style.display =
         "block";
-
-
-    renderCatalog();
 }
 
+
+// ========================================
+// ОТРИСОВКА КАТАЛОГА
+// ========================================
 
 function renderCatalog() {
 
     const screen =
-        document.getElementById(
-            "extraScreen"
-        );
-
-    if (!screen) return;
+        getExtraScreen();
 
 
     const catalog =
@@ -1902,22 +2020,28 @@ function renderCatalog() {
 
 
     let html = `
+
         <div class="catalogScreen">
 
             <button
                 type="button"
                 class="backToOrder"
+                onclick="showOrderScreen()"
             >
                 ← Новый заказ
             </button>
 
-            <h2>Каталог</h2>
+            <h2>
+                Каталог
+            </h2>
 
             <p>
                 Здесь можно изменить цены.
             </p>
 
-            <h3>Дипломы</h3>
+            <h3>
+                Дипломы
+            </h3>
     `;
 
 
@@ -1927,6 +2051,7 @@ function renderCatalog() {
         ([product, tiers]) => {
 
             html += `
+
                 <div class="catalogItem">
 
                     <h4>
@@ -1969,7 +2094,10 @@ function renderCatalog() {
 
 
     html += `
-        <h3>Готовые чашки</h3>
+
+        <h3>
+            Готовые чашки
+        </h3>
     `;
 
 
@@ -1979,6 +2107,7 @@ function renderCatalog() {
         ([product, item]) => {
 
             html += `
+
                 <div class="catalogItem">
 
                     <h4>
@@ -2014,9 +2143,11 @@ function renderCatalog() {
 
 
     html += `
+
             <button
                 type="button"
                 id="saveCatalogButton"
+                onclick="saveCatalogFromScreen()"
             >
                 Сохранить изменения
             </button>
@@ -2024,6 +2155,7 @@ function renderCatalog() {
             <button
                 type="button"
                 id="resetCatalogButton"
+                onclick="resetCatalog()"
             >
                 Сбросить цены
             </button>
@@ -2034,58 +2166,20 @@ function renderCatalog() {
 
     screen.innerHTML =
         html;
-
-
-    screen
-        .querySelector(
-            ".backToOrder"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                screen.style.display =
-                    "none";
-
-                if (positionsVisible()) {
-
-                    document
-                        .getElementById(
-                            "positions"
-                        )
-                        .style.display =
-                        "";
-
-                }
-
-            }
-        );
-
-
-    document
-        .getElementById(
-            "saveCatalogButton"
-        )
-        ?.addEventListener(
-            "click",
-            saveCatalogFromScreen
-        );
-
-
-    document
-        .getElementById(
-            "resetCatalogButton"
-        )
-        ?.addEventListener(
-            "click",
-            resetCatalog
-        );
 }
 
 
-function renderTier(name, tier) {
+// ========================================
+// СТРОКА ЦЕНЫ ДИПЛОМА
+// ========================================
+
+function renderTier(
+    name,
+    tier
+) {
 
     return `
+
         <div class="catalogTier">
 
             <strong>
@@ -2099,8 +2193,7 @@ function renderTier(name, tier) {
             <input
                 type="number"
                 class="catalogSale"
-                data-tier="${name}"
-                value="${tier?.sale || 0}"
+                value="${tier?.sale ?? 0}"
             >
 
             <label>
@@ -2110,8 +2203,7 @@ function renderTier(name, tier) {
             <input
                 type="number"
                 class="catalogCost"
-                data-tier="${name}"
-                value="${tier?.cost || 0}"
+                value="${tier?.cost ?? 0}"
             >
 
         </div>
@@ -2119,15 +2211,19 @@ function renderTier(name, tier) {
 }
 
 
+// ========================================
+// СОХРАНЕНИЕ ЦЕН КАТАЛОГА
+// ========================================
+
 function saveCatalogFromScreen() {
 
     const catalog =
         loadCatalog();
 
 
-    const items =
+    const diplomaItems =
         document.querySelectorAll(
-            ".catalogItem"
+            "#extraScreen .catalogItem"
         );
 
 
@@ -2140,7 +2236,10 @@ function saveCatalogFromScreen() {
         product => {
 
             const item =
-                items[diplomaIndex];
+                diplomaItems[
+                    diplomaIndex
+                ];
+
 
             if (!item) return;
 
@@ -2178,8 +2277,9 @@ function saveCatalogFromScreen() {
                             [tier]
                             .sale =
                             Number(
-                                saleInputs[index]
-                                    .value
+                                saleInputs[
+                                    index
+                                ].value
                             ) || 0;
                     }
 
@@ -2194,8 +2294,9 @@ function saveCatalogFromScreen() {
                             [tier]
                             .cost =
                             Number(
-                                costInputs[index]
-                                    .value
+                                costInputs[
+                                    index
+                                ].value
                             ) || 0;
                     }
 
@@ -2210,12 +2311,12 @@ function saveCatalogFromScreen() {
 
     const cupSales =
         document.querySelectorAll(
-            ".catalogCupSale"
+            "#extraScreen .catalogCupSale"
         );
 
     const cupCosts =
         document.querySelectorAll(
-            ".catalogCupCost"
+            "#extraScreen .catalogCupCost"
         );
 
 
@@ -2225,18 +2326,19 @@ function saveCatalogFromScreen() {
             const product =
                 input.dataset.product;
 
+
             if (
                 catalog.readyCups[product]
             ) {
 
                 catalog
-                    .readyCups[product]
+                    .readyCups
+                    [product]
                     .sale =
                     Number(
                         input.value
                     ) || 0;
             }
-
         }
     );
 
@@ -2247,18 +2349,19 @@ function saveCatalogFromScreen() {
             const product =
                 input.dataset.product;
 
+
             if (
                 catalog.readyCups[product]
             ) {
 
                 catalog
-                    .readyCups[product]
+                    .readyCups
+                    [product]
                     .cost =
                     Number(
                         input.value
                     ) || 0;
             }
-
         }
     );
 
@@ -2273,9 +2376,13 @@ function saveCatalogFromScreen() {
     );
 
 
-    openCatalog();
+    renderCatalog();
 }
 
+
+// ========================================
+// СБРОС ЦЕН
+// ========================================
 
 function resetCatalog() {
 
@@ -2288,54 +2395,240 @@ function resetCatalog() {
     }
 
 
-    const catalog =
+    saveCatalog(
         JSON.parse(
             JSON.stringify(
                 DEFAULT_CATALOG
             )
-        );
-
-
-    saveCatalog(
-        catalog
+        )
     );
 
 
-    openCatalog();
+    renderCatalog();
 }
 
 
 // ========================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ЭКРАНЫ
 // ========================================
 
-function positionsVisible() {
+function getExtraScreen() {
+
+    let screen =
+        document.getElementById(
+            "extraScreen"
+        );
+
+
+    if (!screen) {
+
+        screen =
+            document.createElement(
+                "div"
+            );
+
+        screen.id =
+            "extraScreen";
+
+        document.body.appendChild(
+            screen
+        );
+    }
+
+
+    return screen;
+}
+
+
+function hideExtraScreen() {
+
+    const screen =
+        document.getElementById(
+            "extraScreen"
+        );
+
+
+    if (screen) {
+
+        screen.style.display =
+            "none";
+    }
+}
+
+
+function showOrderScreen() {
+
+    hideExtraScreen();
+
 
     const positions =
         document.getElementById(
             "positions"
         );
 
-    return (
-        positions &&
-        positions.style.display !== "none"
-    );
-}
+
+    if (positions) {
+
+        positions.style.display =
+            "";
+    }
 
 
-function escapeHtml(value) {
+    const client =
+        document.getElementById(
+            "clientName"
+        );
 
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+    if (client) {
+
+        client.closest(".card")
+            ?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+    }
 }
 
 
 // ========================================
-// СТИЛИ ДЛЯ ДОПОЛНИТЕЛЬНЫХ ЭКРАНОВ
+// НАВИГАЦИЯ
+// ========================================
+
+function setupNavigation() {
+
+    const buttons =
+        document.querySelectorAll(
+            ".bottom-nav .nav-item"
+        );
+
+
+    buttons.forEach(
+        button => {
+
+            const text =
+                button
+                    .textContent
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                text.includes("заказ") &&
+                !text.includes("заказы")
+            ) {
+
+                button.onclick =
+                    showOrderScreen;
+            }
+
+
+            else if (
+                text.includes("каталог")
+            ) {
+
+                button.onclick =
+                    openCatalog;
+            }
+
+
+            else if (
+                text.includes("заказы")
+            ) {
+
+                button.onclick =
+                    openOrders;
+            }
+
+
+            else if (
+                text.includes("настройки")
+            ) {
+
+                button.onclick =
+                    () => {
+
+                        alert(
+                            "Настройки пока находятся в разработке."
+                        );
+                    };
+            }
+
+        }
+    );
+}
+
+
+// ========================================
+// НАЗВАНИЕ КАТЕГОРИИ
+// ========================================
+
+function getCategoryName(type) {
+
+    const names = {
+
+        diploma:
+            "Диплом",
+
+        cup_ready:
+            "Готовая чашка",
+
+        cup_print:
+            "Печать чашки",
+
+        cup_custom:
+            "Чашка",
+
+        packaging:
+            "Упаковка для чашки",
+
+        designer:
+            "Услуги дизайнера",
+
+        urgent:
+            "Срочность"
+    };
+
+
+    return (
+        names[type] ||
+        "Позиция"
+    );
+}
+
+
+// ========================================
+// БЕЗОПАСНЫЙ ТЕКСТ
+// ========================================
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+}
+
+
+// ========================================
+// ДОПОЛНИТЕЛЬНЫЕ СТИЛИ
 // ========================================
 
 function addExtraStyles() {
@@ -2431,10 +2724,7 @@ function addExtraStyles() {
             font-size: 16px;
         }
 
-        #saveCatalogButton {
-            width: 100%;
-        }
-
+        #saveCatalogButton,
         #resetCatalogButton {
             width: 100%;
         }
@@ -2460,10 +2750,6 @@ function addExtraStyles() {
             margin-top: 10px;
         }
 
-        .orderCard button {
-            margin-right: 5px;
-        }
-
         .viewOrder {
             background: #eee;
         }
@@ -2478,18 +2764,6 @@ function addExtraStyles() {
             color: #777;
         }
 
-        .positionTotals {
-            margin-top: 15px;
-            padding: 12px;
-            background: #f5f5f5;
-            border-radius: 12px;
-            line-height: 1.8;
-        }
-
-        .positionTotals strong {
-            float: right;
-        }
-
     `;
 
 
@@ -2500,7 +2774,7 @@ function addExtraStyles() {
 
 
 // ========================================
-// ЗАПУСК ПРИЛОЖЕНИЯ
+// ЗАПУСК
 // ========================================
 
 document.addEventListener(
@@ -2509,82 +2783,9 @@ document.addEventListener(
 
         addExtraStyles();
 
-
-        // Настройка первой позиции
-        document
-            .querySelectorAll(
-                "#positions .position"
-            )
-            .forEach(
-                setupPosition
-            );
-
-
-        // Кнопка добавить позицию
-        setupAddPositionButton();
-
-
-        // Навигация
         setupNavigation();
 
-
-        // Расчёт
         updateOrderTotals();
-
-
-        // Сохранить заказ
-        const saveButton =
-            document.querySelector(
-                "#saveOrder"
-            );
-
-
-        if (saveButton) {
-
-            saveButton.addEventListener(
-                "click",
-                saveOrder
-            );
-        }
-
-
-        // Если id другой — ищем по тексту
-        document
-            .querySelectorAll(
-                "button"
-            )
-            .forEach(button => {
-
-                const text =
-                    button.textContent
-                        .trim()
-                        .toLowerCase();
-
-
-                if (
-                    text ===
-                    "сохранить заказ"
-                ) {
-
-                    button.addEventListener(
-                        "click",
-                        saveOrder
-                    );
-                }
-
-
-                if (
-                    text ===
-                    "очистить"
-                ) {
-
-                    button.addEventListener(
-                        "click",
-                        clearOrder
-                    );
-                }
-
-            });
 
     }
 );
@@ -2613,7 +2814,6 @@ if (
                             error
                         )
                 );
-
         }
     );
 }
