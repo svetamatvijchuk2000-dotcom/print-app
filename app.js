@@ -9629,3 +9629,210 @@ document.addEventListener(
         );
     }
 );
+
+// =====================================================
+// ИСПРАВЛЕНИЕ ЦЕН ДИПЛОМОВ ПО КОЛИЧЕСТВУ
+// Работает в обе стороны:
+// товар -> количество
+// количество -> товар
+// =====================================================
+
+
+// Пересчитываем цену конкретной позиции диплома
+function refreshDiplomaPriceByQuantity(position) {
+
+    if (!position) {
+        return;
+    }
+
+
+    const category =
+        position.querySelector(
+            ".position-category"
+        )?.value;
+
+
+    // Для других категорий ничего не меняем
+    if (category !== "diploma") {
+        return;
+    }
+
+
+    const productSelect =
+        position.querySelector(
+            ".position-product"
+        );
+
+
+    if (
+        !productSelect ||
+        !productSelect.value
+    ) {
+
+        calculateAll();
+
+        return;
+    }
+
+
+    const quantityInput =
+        position.querySelector(
+            ".position-quantity"
+        );
+
+
+    const saleInput =
+        position.querySelector(
+            ".position-sale"
+        );
+
+
+    const costInput =
+        position.querySelector(
+            ".position-cost"
+        );
+
+
+    if (
+        !quantityInput ||
+        !saleInput ||
+        !costInput
+    ) {
+        return;
+    }
+
+
+    // Не даём количеству быть меньше 1
+    let quantity =
+        Number(
+            quantityInput.value
+        );
+
+
+    if (
+        !Number.isFinite(quantity) ||
+        quantity < 1
+    ) {
+        quantity = 1;
+    }
+
+
+    const price =
+        getDiplomaPrice(
+            productSelect.value,
+            quantity
+        );
+
+
+    // Обновляем цену за 1 шт.
+    saleInput.value =
+        Number(
+            price.sale || 0
+        );
+
+
+    costInput.value =
+        Number(
+            price.cost || 0
+        );
+
+
+    // И сразу обновляем итог
+    calculateAll();
+}
+
+
+// =====================================================
+// СЛУШАЕМ ИЗМЕНЕНИЕ КОЛИЧЕСТВА
+// =====================================================
+
+document.addEventListener(
+    "input",
+    function (event) {
+
+        const quantityInput =
+            event.target.closest(
+                "#positions .position-quantity"
+            );
+
+
+        if (!quantityInput) {
+            return;
+        }
+
+
+        const position =
+            quantityInput.closest(
+                ".position-card"
+            );
+
+
+        if (!position) {
+            return;
+        }
+
+
+        const category =
+            position.querySelector(
+                ".position-category"
+            )?.value;
+
+
+        if (category === "diploma") {
+
+            refreshDiplomaPriceByQuantity(
+                position
+            );
+
+        } else {
+
+            calculateAll();
+        }
+    }
+);
+
+
+// =====================================================
+// ДОПОЛНИТЕЛЬНО ЛОВИМ CHANGE
+// Полезно для iPhone,
+// когда количество вводится с цифровой клавиатуры
+// =====================================================
+
+document.addEventListener(
+    "change",
+    function (event) {
+
+        const quantityInput =
+            event.target.closest(
+                "#positions .position-quantity"
+            );
+
+
+        if (!quantityInput) {
+            return;
+        }
+
+
+        const position =
+            quantityInput.closest(
+                ".position-card"
+            );
+
+
+        if (!position) {
+            return;
+        }
+
+
+        if (
+            position.querySelector(
+                ".position-category"
+            )?.value === "diploma"
+        ) {
+
+            refreshDiplomaPriceByQuantity(
+                position
+            );
+        }
+    }
+);
