@@ -5253,3 +5253,2295 @@ document.addEventListener(
         }
     }
 );
+
+
+// =====================================================
+// ОБНОВЛЕНИЕ
+// ФОТО + ДОСТАВКА + ТТН + НОВЫЕ ТОВАРЫ
+// ВСТАВИТЬ В САМЫЙ КОНЕЦ app.js
+// =====================================================
+
+
+// =====================================================
+// КАТАЛОГ — МОИ ТОВАРЫ
+// =====================================================
+
+const _baseLoadCatalog = loadCatalog;
+
+loadCatalog = function () {
+
+    const catalog =
+        _baseLoadCatalog();
+
+    if (
+        !catalog.customProducts ||
+        typeof catalog.customProducts !== "object"
+    ) {
+        catalog.customProducts = {};
+
+        saveCatalog(
+            catalog
+        );
+    }
+
+    return catalog;
+};
+
+
+function makeCustomProductKey() {
+
+    return (
+        "custom_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(36)
+            .slice(2, 7)
+    );
+}
+
+
+function addCustomProductFromCatalog() {
+
+    const name =
+        document.getElementById(
+            "newProductName"
+        )?.value.trim() || "";
+
+    const category =
+        document.getElementById(
+            "newProductCategory"
+        )?.value.trim() || "";
+
+    const sale =
+        Number(
+            document.getElementById(
+                "newProductSale"
+            )?.value || 0
+        );
+
+    const cost =
+        Number(
+            document.getElementById(
+                "newProductCost"
+            )?.value || 0
+        );
+
+    const description =
+        document.getElementById(
+            "newProductDescription"
+        )?.value.trim() || "";
+
+
+    if (!name) {
+
+        alert(
+            "Введите название товара."
+        );
+
+        return;
+    }
+
+
+    const catalog =
+        loadCatalog();
+
+    const key =
+        makeCustomProductKey();
+
+
+    catalog.customProducts[key] = {
+
+        name,
+
+        category,
+
+        sale,
+
+        cost,
+
+        description
+    };
+
+
+    saveCatalog(
+        catalog
+    );
+
+
+    renderCatalog();
+
+
+    alert(
+        "Товар добавлен в каталог."
+    );
+}
+
+
+function deleteCustomProduct(key) {
+
+    if (
+        !confirm(
+            "Удалить этот товар из каталога?"
+        )
+    ) {
+        return;
+    }
+
+
+    const catalog =
+        loadCatalog();
+
+
+    if (
+        catalog.customProducts?.[key]
+    ) {
+
+        delete catalog
+            .customProducts[key];
+
+
+        saveCatalog(
+            catalog
+        );
+
+
+        renderCatalog();
+    }
+}
+
+
+// =====================================================
+// ДОБАВЛЯЕМ РАЗДЕЛ "МОИ ТОВАРЫ" В КАТАЛОГ
+// =====================================================
+
+function appendCustomCatalogSection() {
+
+    const container =
+        document.getElementById(
+            "catalogContent"
+        );
+
+    if (!container) return;
+
+
+    const catalog =
+        loadCatalog();
+
+
+    const products =
+        Object.entries(
+            catalog.customProducts || {}
+        );
+
+
+    const section =
+        document.createElement(
+            "div"
+        );
+
+
+    section.className =
+        "catalog-section custom-products-section";
+
+
+    section.innerHTML = `
+
+        <h3>
+            Мои товары
+        </h3>
+
+
+        <div
+            class="catalog-product custom-product-form"
+        >
+
+            <h4>
+                ＋ Добавить новый товар
+            </h4>
+
+
+            <div class="field">
+
+                <label>
+                    Название товара
+                </label>
+
+                <input
+                    id="newProductName"
+                    type="text"
+                    placeholder="Например: Термокружка 450 мл"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Категория
+                </label>
+
+                <input
+                    id="newProductCategory"
+                    type="text"
+                    placeholder="Например: Чашки, металл, текстиль"
+                >
+
+            </div>
+
+
+            <div
+                class="catalog-two-inputs"
+            >
+
+                <label>
+
+                    Цена продажи
+
+                    <input
+                        id="newProductSale"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value="0"
+                    >
+
+                </label>
+
+
+                <label>
+
+                    Себестоимость
+
+                    <input
+                        id="newProductCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value="0"
+                    >
+
+                </label>
+
+            </div>
+
+
+            <div
+                class="field"
+                style="margin-top:10px;"
+            >
+
+                <label>
+                    Описание — необязательно
+                </label>
+
+                <input
+                    id="newProductDescription"
+                    type="text"
+                    placeholder="Дополнительная информация"
+                >
+
+            </div>
+
+
+            <button
+                type="button"
+                class="primary-button"
+                onclick="addCustomProductFromCatalog()"
+            >
+                Добавить товар
+            </button>
+
+        </div>
+
+
+        <div
+            class="custom-products-list"
+        >
+
+            ${
+                products.length
+
+                ? products
+                    .map(
+                        ([key, product]) => `
+
+                        <div
+                            class="catalog-product custom-product-card"
+                        >
+
+                            <div
+                                class="custom-product-title-row"
+                            >
+
+                                <div>
+
+                                    <h4>
+                                        ${escapeHtml(
+                                            product.name ||
+                                            "Без названия"
+                                        )}
+                                    </h4>
+
+                                    ${
+                                        product.category
+                                            ? `
+                                                <div
+                                                    class="custom-product-category"
+                                                >
+                                                    ${escapeHtml(
+                                                        product.category
+                                                    )}
+                                                </div>
+                                            `
+                                            : ""
+                                    }
+
+                                </div>
+
+
+                                <button
+                                    type="button"
+                                    class="custom-product-delete"
+                                    onclick="
+                                        deleteCustomProduct(
+                                            '${escapeHtml(key)}'
+                                        )
+                                    "
+                                >
+                                    ×
+                                </button>
+
+                            </div>
+
+
+                            ${
+                                product.description
+                                    ? `
+                                        <div
+                                            class="custom-product-description"
+                                        >
+                                            ${escapeHtml(
+                                                product.description
+                                            )}
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+
+                            <div
+                                class="custom-product-prices"
+                            >
+
+                                <span>
+                                    Продажа:
+                                    <b>
+                                        ${formatMoney(
+                                            product.sale
+                                        )} грн
+                                    </b>
+                                </span>
+
+                                <span>
+                                    Себестоимость:
+                                    <b>
+                                        ${formatMoney(
+                                            product.cost
+                                        )} грн
+                                    </b>
+                                </span>
+
+                            </div>
+
+                        </div>
+                    `
+                    )
+                    .join("")
+
+                : `
+                    <div
+                        class="no-custom-products"
+                    >
+                        Добавленных товаров пока нет.
+                    </div>
+                `
+            }
+
+        </div>
+    `;
+
+
+    const firstButton =
+        container.querySelector(
+            "button.primary-button"
+        );
+
+
+    if (firstButton) {
+
+        container.insertBefore(
+            section,
+            firstButton
+        );
+
+    } else {
+
+        container.appendChild(
+            section
+        );
+    }
+
+
+    addCustomProductStyles();
+}
+
+
+// =====================================================
+// ПЕРЕОПРЕДЕЛЯЕМ ОТРИСОВКУ КАТАЛОГА
+// =====================================================
+
+const _baseRenderCatalog =
+    renderCatalog;
+
+
+renderCatalog = function () {
+
+    _baseRenderCatalog();
+
+    appendCustomCatalogSection();
+};
+
+
+// =====================================================
+// СБРОС КАТАЛОГА
+// СОХРАНЯЕМ ДОБАВЛЕННЫЕ ТОВАРЫ
+// =====================================================
+
+resetCatalog = function () {
+
+    if (
+        !confirm(
+            "Сбросить стандартные цены каталога? Добавленные вами товары останутся."
+        )
+    ) {
+        return;
+    }
+
+
+    const current =
+        loadCatalog();
+
+
+    saveCatalog({
+
+        diplomaPrices:
+            structuredClone(
+                DEFAULT_DIPLOMA_PRICES
+            ),
+
+        readyCups:
+            structuredClone(
+                DEFAULT_READY_CUPS
+            ),
+
+        customProducts:
+            structuredClone(
+                current.customProducts ||
+                {}
+            )
+    });
+
+
+    renderCatalog();
+};
+
+
+// =====================================================
+// СТИЛИ МОИХ ТОВАРОВ
+// =====================================================
+
+function addCustomProductStyles() {
+
+    if (
+        document.getElementById(
+            "customProductStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "customProductStyles";
+
+
+    style.textContent = `
+
+        .custom-product-form .field {
+            margin-bottom: 10px;
+        }
+
+        .custom-product-form input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .custom-product-form .primary-button {
+            margin-top: 12px;
+        }
+
+        .custom-product-title-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .custom-product-title-row h4 {
+            margin-bottom: 3px;
+        }
+
+        .custom-product-category {
+            color: #777;
+            font-size: 13px;
+        }
+
+        .custom-product-description {
+            margin-top: 8px;
+            color: #555;
+            font-size: 13px;
+        }
+
+        .custom-product-prices {
+            display: grid;
+            gap: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .custom-product-delete {
+            border: 0;
+            background: #f3f3f3;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 22px;
+            line-height: 28px;
+        }
+
+        .no-custom-products {
+            color: #777;
+            padding: 8px 2px 18px;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// НОВЫЙ ЗАКАЗ — КАТЕГОРИЯ "МОИ ТОВАРЫ"
+// =====================================================
+
+const _baseAddPosition =
+    addPosition;
+
+
+addPosition = function () {
+
+    _baseAddPosition();
+
+
+    const positions =
+        document.querySelectorAll(
+            "#positions .position-card"
+        );
+
+
+    const position =
+        positions[
+            positions.length - 1
+        ];
+
+
+    if (!position) return;
+
+
+    const select =
+        position.querySelector(
+            ".position-category"
+        );
+
+
+    if (
+        !select ||
+        select.querySelector(
+            'option[value="custom_product"]'
+        )
+    ) {
+        return;
+    }
+
+
+    const option =
+        document.createElement(
+            "option"
+        );
+
+
+    option.value =
+        "custom_product";
+
+    option.textContent =
+        "Мои товары";
+
+
+    select.appendChild(
+        option
+    );
+};
+
+
+// =====================================================
+// ВЫБОР МОЕГО ТОВАРА
+// =====================================================
+
+const _baseUpdateProductOptions =
+    updateProductOptions;
+
+
+updateProductOptions =
+function (categorySelect) {
+
+    if (
+        categorySelect?.value !==
+        "custom_product"
+    ) {
+
+        _baseUpdateProductOptions(
+            categorySelect
+        );
+
+        return;
+    }
+
+
+    const position =
+        categorySelect.closest(
+            ".position-card"
+        );
+
+
+    if (!position) return;
+
+
+    const product =
+        position.querySelector(
+            ".position-product"
+        );
+
+
+    const extra =
+        position.querySelector(
+            ".extra-field"
+        );
+
+
+    const catalog =
+        loadCatalog();
+
+
+    if (!product) return;
+
+
+    product.innerHTML = `
+        <option value="">
+            Выберите товар
+        </option>
+    `;
+
+
+    Object.entries(
+        catalog.customProducts || {}
+    )
+    .forEach(
+        ([key, item]) => {
+
+            product.innerHTML += `
+                <option
+                    value="${escapeHtml(key)}"
+                >
+                    ${escapeHtml(
+                        item.name ||
+                        "Без названия"
+                    )}
+                </option>
+            `;
+        }
+    );
+
+
+    if (extra) {
+        extra.innerHTML = "";
+    }
+
+
+    calculateAll();
+};
+
+
+// =====================================================
+// АВТОМАТИЧЕСКИ ПОДСТАВЛЯЕМ ЦЕНУ МОЕГО ТОВАРА
+// =====================================================
+
+const _baseUpdateDiploma =
+    updateDiploma;
+
+
+updateDiploma =
+function (productSelect) {
+
+    const position =
+        productSelect?.closest(
+            ".position-card"
+        );
+
+
+    const category =
+        position?.querySelector(
+            ".position-category"
+        )?.value;
+
+
+    if (
+        category !==
+        "custom_product"
+    ) {
+
+        _baseUpdateDiploma(
+            productSelect
+        );
+
+        return;
+    }
+
+
+    const catalog =
+        loadCatalog();
+
+
+    const item =
+        catalog.customProducts?.[
+            productSelect.value
+        ];
+
+
+    const saleInput =
+        position.querySelector(
+            ".position-sale"
+        );
+
+
+    const costInput =
+        position.querySelector(
+            ".position-cost"
+        );
+
+
+    const extra =
+        position.querySelector(
+            ".extra-field"
+        );
+
+
+    if (item) {
+
+        if (saleInput) {
+            saleInput.value =
+                Number(
+                    item.sale || 0
+                );
+        }
+
+
+        if (costInput) {
+            costInput.value =
+                Number(
+                    item.cost || 0
+                );
+        }
+
+
+        if (extra) {
+
+            extra.innerHTML = `
+
+                <div class="field">
+
+                    <label>
+                        Описание
+                    </label>
+
+                    <input
+                        type="text"
+                        class="position-description"
+                        value="${escapeHtml(
+                            item.description || ""
+                        )}"
+                        placeholder="Описание"
+                    >
+
+                </div>
+            `;
+        }
+    }
+
+
+    calculateAll();
+};
+
+
+// =====================================================
+// НАЗВАНИЯ МОИХ ТОВАРОВ
+// =====================================================
+
+const _baseCategoryNames =
+    categoryNames;
+
+
+categoryNames =
+function (category) {
+
+    if (
+        category ===
+        "custom_product"
+    ) {
+        return "Мои товары";
+    }
+
+
+    return _baseCategoryNames(
+        category
+    );
+};
+
+
+const _baseCatalogNames =
+    catalogNames;
+
+
+catalogNames =
+function (
+    category,
+    key
+) {
+
+    if (
+        category ===
+        "custom_product"
+    ) {
+
+        return (
+            loadCatalog()
+                .customProducts?.[key]
+                ?.name ||
+            key
+        );
+    }
+
+
+    return _baseCatalogNames(
+        category,
+        key
+    );
+};
+
+
+// =====================================================
+// РЕДАКТИРОВАНИЕ ЗАКАЗА — МОИ ТОВАРЫ
+// =====================================================
+
+const _baseGetEditProductOptionsHtml =
+    getEditProductOptionsHtml;
+
+
+getEditProductOptionsHtml =
+function (
+    category,
+    selected
+) {
+
+    if (
+        category !==
+        "custom_product"
+    ) {
+
+        return (
+            _baseGetEditProductOptionsHtml(
+                category,
+                selected
+            )
+        );
+    }
+
+
+    const catalog =
+        loadCatalog();
+
+
+    let html = `
+        <option value="">
+            Выберите товар
+        </option>
+    `;
+
+
+    Object.entries(
+        catalog.customProducts || {}
+    )
+    .forEach(
+        ([key, item]) => {
+
+            html += `
+
+                <option
+                    value="${escapeHtml(key)}"
+                    ${
+                        key === selected
+                            ? "selected"
+                            : ""
+                    }
+                >
+                    ${escapeHtml(
+                        item.name ||
+                        "Без названия"
+                    )}
+                </option>
+            `;
+        }
+    );
+
+
+    return html;
+};
+
+
+function ensureCustomCategoryInEditCard(
+    card,
+    selectedCategory = ""
+) {
+
+    const select =
+        card?.querySelector(
+            ".edit-category"
+        );
+
+
+    if (!select) return;
+
+
+    let option =
+        select.querySelector(
+            'option[value="custom_product"]'
+        );
+
+
+    if (!option) {
+
+        option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            "custom_product";
+
+        option.textContent =
+            "Мои товары";
+
+
+        select.appendChild(
+            option
+        );
+    }
+
+
+    if (
+        selectedCategory ===
+        "custom_product"
+    ) {
+
+        select.value =
+            "custom_product";
+    }
+}
+
+
+// =====================================================
+// РЕДАКТИРОВАНИЕ — ВЫБОР ТОВАРА
+// =====================================================
+
+const _baseUpdateEditProductOptions =
+    updateEditProductOptions;
+
+
+updateEditProductOptions =
+function (categorySelect) {
+
+    if (
+        categorySelect?.value !==
+        "custom_product"
+    ) {
+
+        _baseUpdateEditProductOptions(
+            categorySelect
+        );
+
+        return;
+    }
+
+
+    const card =
+        categorySelect.closest(
+            "[data-edit-position]"
+        );
+
+
+    if (!card) return;
+
+
+    const product =
+        card.querySelector(
+            ".edit-product"
+        );
+
+
+    const extra =
+        card.querySelector(
+            ".edit-extra-field"
+        );
+
+
+    if (product) {
+
+        product.innerHTML =
+            getEditProductOptionsHtml(
+                "custom_product",
+                ""
+            );
+    }
+
+
+    if (extra) {
+        extra.innerHTML = "";
+    }
+};
+
+
+// =====================================================
+// РЕДАКТИРОВАНИЕ — ЦЕНА МОЕГО ТОВАРА
+// =====================================================
+
+const _baseUpdateEditProductPrice =
+    updateEditProductPrice;
+
+
+updateEditProductPrice =
+function (productSelect) {
+
+    const card =
+        productSelect?.closest(
+            "[data-edit-position]"
+        );
+
+
+    const category =
+        card?.querySelector(
+            ".edit-category"
+        )?.value;
+
+
+    if (
+        category !==
+        "custom_product"
+    ) {
+
+        _baseUpdateEditProductPrice(
+            productSelect
+        );
+
+        return;
+    }
+
+
+    const item =
+        loadCatalog()
+            .customProducts?.[
+                productSelect.value
+            ];
+
+
+    const sale =
+        card.querySelector(
+            ".edit-sale"
+        );
+
+
+    const cost =
+        card.querySelector(
+            ".edit-cost"
+        );
+
+
+    const extra =
+        card.querySelector(
+            ".edit-extra-field"
+        );
+
+
+    if (item) {
+
+        if (sale) {
+            sale.value =
+                Number(
+                    item.sale || 0
+                );
+        }
+
+
+        if (cost) {
+            cost.value =
+                Number(
+                    item.cost || 0
+                );
+        }
+
+
+        if (extra) {
+
+            extra.innerHTML = `
+
+                <div class="field">
+
+                    <label>
+                        Описание
+                    </label>
+
+                    <input
+                        type="text"
+                        class="edit-description"
+                        value="${escapeHtml(
+                            item.description || ""
+                        )}"
+                        placeholder="Описание"
+                    >
+
+                </div>
+            `;
+        }
+    }
+};
+
+
+const _baseAddEditOrderPosition =
+    addEditOrderPosition;
+
+
+addEditOrderPosition =
+function () {
+
+    _baseAddEditOrderPosition();
+
+
+    const cards =
+        document.querySelectorAll(
+            "#editOrderPositions [data-edit-position]"
+        );
+
+
+    const card =
+        cards[
+            cards.length - 1
+        ];
+
+
+    ensureCustomCategoryInEditCard(
+        card
+    );
+};
+
+
+// =====================================================
+// ФОТО — ИСПРАВЛЕННЫЙ ПРОСМОТР
+// =====================================================
+
+openOrderPhoto =
+function (photoUrl) {
+
+    closeOrderPhoto();
+
+
+    if (!photoUrl) {
+        return;
+    }
+
+
+    const viewer =
+        document.createElement(
+            "div"
+        );
+
+
+    viewer.id =
+        "photoViewer";
+
+
+    viewer.innerHTML = `
+
+        <div
+            class="photo-viewer-overlay"
+            onclick="closeOrderPhoto()"
+        >
+
+            <button
+                type="button"
+                class="photo-viewer-close"
+                onclick="
+                    event.stopPropagation();
+                    closeOrderPhoto();
+                "
+            >
+                ×
+            </button>
+
+
+            <img
+                src="${photoUrl}"
+                class="photo-viewer-image"
+                alt="Фото заказа"
+                onclick="
+                    event.stopPropagation()
+                "
+            >
+
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        viewer
+    );
+
+
+    requestAnimationFrame(
+        () => {
+
+            viewer.classList.add(
+                "active"
+            );
+        }
+    );
+};
+
+
+// =====================================================
+// СТИЛИ ПРОСМОТРА ФОТО
+// =====================================================
+
+function addPhotoViewerStyles() {
+
+    if (
+        document.getElementById(
+            "photoViewerStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "photoViewerStyles";
+
+
+    style.textContent = `
+
+        #photoViewer {
+            position: fixed;
+            inset: 0;
+            z-index: 20000;
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+
+        #photoViewer.active {
+            opacity: 1;
+        }
+
+        .photo-viewer-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .photo-viewer-image {
+            max-width: 100%;
+            max-height: 88vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .photo-viewer-close {
+            position: absolute;
+            top: max(
+                14px,
+                env(safe-area-inset-top)
+            );
+            right: 14px;
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 50%;
+            background:
+                rgba(255,255,255,.18);
+            color: #fff;
+            font-size: 30px;
+            line-height: 38px;
+            z-index: 2;
+        }
+
+        .order-photo-item img {
+            cursor: zoom-in;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// ДОСТАВКА И ТТН
+// =====================================================
+
+function saveOrderShipping(id) {
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                Number(item.id) ===
+                Number(id)
+        );
+
+
+    if (!order) return;
+
+
+    order.deliveryCity =
+        document.getElementById(
+            "orderDeliveryCity"
+        )?.value.trim() || "";
+
+
+    order.deliveryBranch =
+        document.getElementById(
+            "orderDeliveryBranch"
+        )?.value.trim() || "";
+
+
+    order.ttn =
+        document.getElementById(
+            "orderTtn"
+        )?.value.trim() || "";
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderOrderDetails(
+        order
+    );
+
+
+    renderOrderCards();
+}
+
+
+// =====================================================
+// ДОСТАВКА В КАРТОЧКЕ ЗАКАЗА
+// =====================================================
+
+function addShippingToOrderDetails(
+    order
+) {
+
+    const content =
+        document.querySelector(
+            "#orderModal .order-modal-content"
+        );
+
+
+    if (!content) return;
+
+
+    const blocks =
+        content.querySelectorAll(
+            ".order-detail-block"
+        );
+
+
+    // Второй блок — статус оплаты
+    const paymentBlock =
+        blocks[1];
+
+
+    if (!paymentBlock) return;
+
+
+    const shipping =
+        document.createElement(
+            "div"
+        );
+
+
+    shipping.className =
+        "order-detail-block order-shipping-block";
+
+
+    shipping.innerHTML = `
+
+        <div
+            class="detail-section-title"
+        >
+            Доставка
+        </div>
+
+
+        <div
+            class="shipping-grid"
+        >
+
+            <div class="field">
+
+                <label>
+                    Город
+                </label>
+
+                <input
+                    id="orderDeliveryCity"
+                    type="text"
+                    value="${escapeHtml(
+                        order.deliveryCity ||
+                        ""
+                    )}"
+                    placeholder="Например: Одесса"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    № отделения
+                </label>
+
+                <input
+                    id="orderDeliveryBranch"
+                    type="text"
+                    value="${escapeHtml(
+                        order.deliveryBranch ||
+                        ""
+                    )}"
+                    placeholder="Например: 12"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="field shipping-ttn-field"
+        >
+
+            <label>
+                ТТН
+            </label>
+
+            <input
+                id="orderTtn"
+                type="text"
+                inputmode="numeric"
+                value="${escapeHtml(
+                    order.ttn || ""
+                )}"
+                placeholder="Номер ТТН"
+            >
+
+        </div>
+
+
+        <button
+            type="button"
+            class="secondary-button"
+            onclick="
+                saveOrderShipping(
+                    ${Number(order.id)}
+                )
+            "
+        >
+            Сохранить доставку
+        </button>
+    `;
+
+
+    paymentBlock.insertAdjacentElement(
+        "afterend",
+        shipping
+    );
+}
+
+
+// =====================================================
+// ДЕЛАЕМ ФОТО КЛИКАБЕЛЬНЫМИ
+// =====================================================
+
+function addPhotoClicksToOrderDetails(
+    order
+) {
+
+    const images =
+        document.querySelectorAll(
+            "#orderModal .order-photo-item img"
+        );
+
+
+    const photos =
+        Array.isArray(
+            order.photos
+        )
+            ? order.photos
+            : [];
+
+
+    images.forEach(
+        (img, index) => {
+
+            img.onclick =
+                function (event) {
+
+                    event.stopPropagation();
+
+                    openOrderPhoto(
+                        photos[index]
+                    );
+                };
+        }
+    );
+
+
+    document
+        .querySelectorAll(
+            "#orderModal .order-photo-item button"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    event =>
+                        event.stopPropagation()
+                );
+            }
+        );
+}
+
+
+// =====================================================
+// ПЕРЕОПРЕДЕЛЯЕМ ПРОСМОТР ЗАКАЗА
+// =====================================================
+
+const _baseRenderOrderDetails =
+    renderOrderDetails;
+
+
+renderOrderDetails =
+function (order) {
+
+    if (
+        order.deliveryCity == null
+    ) {
+        order.deliveryCity = "";
+    }
+
+
+    if (
+        order.deliveryBranch == null
+    ) {
+        order.deliveryBranch = "";
+    }
+
+
+    if (
+        order.ttn == null
+    ) {
+        order.ttn = "";
+    }
+
+
+    _baseRenderOrderDetails(
+        order
+    );
+
+
+    addShippingToOrderDetails(
+        order
+    );
+
+
+    addPhotoClicksToOrderDetails(
+        order
+    );
+
+
+    addPhotoViewerStyles();
+
+    addShippingStyles();
+};
+
+
+// =====================================================
+// РЕДАКТИРОВАНИЕ ЗАКАЗА
+// ДОБАВЛЯЕМ ДОСТАВКУ
+// =====================================================
+
+const _baseRenderOrderEditor =
+    renderOrderEditor;
+
+
+renderOrderEditor =
+function (order) {
+
+    _baseRenderOrderEditor(
+        order
+    );
+
+
+    // Добавляем категорию
+    // "Мои товары"
+    document
+        .querySelectorAll(
+            "#editOrderPositions [data-edit-position]"
+        )
+        .forEach(
+            (card, index) => {
+
+                ensureCustomCategoryInEditCard(
+                    card,
+                    order.positions?.[index]
+                        ?.category ||
+                    ""
+                );
+            }
+        );
+
+
+    const content =
+        document.querySelector(
+            "#orderModal .order-modal-content"
+        );
+
+
+    const clientBlock =
+        content?.querySelector(
+            ".order-detail-block"
+        );
+
+
+    if (!clientBlock) return;
+
+
+    const block =
+        document.createElement(
+            "div"
+        );
+
+
+    block.className =
+        "order-detail-block";
+
+
+    block.innerHTML = `
+
+        <div
+            class="detail-section-title"
+        >
+            Доставка
+        </div>
+
+
+        <div
+            class="shipping-grid"
+        >
+
+            <div class="field">
+
+                <label>
+                    Город
+                </label>
+
+                <input
+                    id="editOrderDeliveryCity"
+                    type="text"
+                    value="${escapeHtml(
+                        order.deliveryCity ||
+                        ""
+                    )}"
+                    placeholder="Например: Одесса"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    № отделения
+                </label>
+
+                <input
+                    id="editOrderDeliveryBranch"
+                    type="text"
+                    value="${escapeHtml(
+                        order.deliveryBranch ||
+                        ""
+                    )}"
+                    placeholder="Например: 12"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="field shipping-ttn-field"
+        >
+
+            <label>
+                ТТН
+            </label>
+
+            <input
+                id="editOrderTtn"
+                type="text"
+                inputmode="numeric"
+                value="${escapeHtml(
+                    order.ttn || ""
+                )}"
+                placeholder="Номер ТТН"
+            >
+
+        </div>
+    `;
+
+
+    clientBlock.insertAdjacentElement(
+        "afterend",
+        block
+    );
+
+
+    addShippingStyles();
+};
+
+
+// =====================================================
+// СОХРАНЕНИЕ ДОСТАВКИ ПРИ РЕДАКТИРОВАНИИ
+// =====================================================
+
+const _baseSaveEditedOrder =
+    saveEditedOrder;
+
+
+saveEditedOrder =
+function (id) {
+
+    const deliveryCity =
+        document.getElementById(
+            "editOrderDeliveryCity"
+        )?.value.trim() || "";
+
+
+    const deliveryBranch =
+        document.getElementById(
+            "editOrderDeliveryBranch"
+        )?.value.trim() || "";
+
+
+    const ttn =
+        document.getElementById(
+            "editOrderTtn"
+        )?.value.trim() || "";
+
+
+    _baseSaveEditedOrder(
+        id
+    );
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                Number(item.id) ===
+                Number(id)
+        );
+
+
+    if (!order) return;
+
+
+    order.deliveryCity =
+        deliveryCity;
+
+
+    order.deliveryBranch =
+        deliveryBranch;
+
+
+    order.ttn =
+        ttn;
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderOrderDetails(
+        order
+    );
+
+
+    renderOrderCards();
+};
+
+
+// =====================================================
+// СТИЛИ ДОСТАВКИ
+// =====================================================
+
+function addShippingStyles() {
+
+    if (
+        document.getElementById(
+            "shippingStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "shippingStyles";
+
+
+    style.textContent = `
+
+        .shipping-grid {
+            display: grid;
+            grid-template-columns:
+                1fr 1fr;
+            gap: 10px;
+        }
+
+        .shipping-grid input,
+        .shipping-ttn-field input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .shipping-ttn-field {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .order-shipping-block
+        .secondary-button {
+            margin-top: 4px;
+        }
+
+        .order-shipping-summary {
+            display: grid;
+            gap: 3px;
+            margin-top: 7px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        @media (max-width: 420px) {
+
+            .shipping-grid {
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// ПОЛУЧАЕМ ЗАКАЗЫ В ТОМ ЖЕ ПОРЯДКЕ,
+// КАК ОНИ ПОКАЗАНЫ НА ЭКРАНЕ
+// =====================================================
+
+function getOrdersVisibleForCurrentList() {
+
+    let orders =
+        getOrders();
+
+
+    const search =
+        String(
+            ordersSearch || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    if (search) {
+
+        orders =
+            orders.filter(
+                order => {
+
+                    const number =
+                        String(
+                            order.number ||
+                            ""
+                        )
+                        .toLowerCase();
+
+
+                    const client =
+                        String(
+                            order.client ||
+                            ""
+                        )
+                        .toLowerCase();
+
+
+                    return (
+                        number.includes(
+                            search
+                        ) ||
+                        client.includes(
+                            search
+                        )
+                    );
+                }
+            );
+    }
+
+
+    if (
+        ordersStatusFilter !==
+        "all"
+    ) {
+
+        orders =
+            orders.filter(
+                order =>
+                    getOrderStatus(
+                        order
+                    ) ===
+                    ordersStatusFilter
+            );
+    }
+
+
+    orders.sort(
+        (a, b) => {
+
+            if (
+                ordersSort ===
+                "newest"
+            ) {
+
+                return (
+                    getOrderDate(b) -
+                    getOrderDate(a)
+                );
+            }
+
+
+            if (
+                ordersSort ===
+                "oldest"
+            ) {
+
+                return (
+                    getOrderDate(a) -
+                    getOrderDate(b)
+                );
+            }
+
+
+            if (
+                ordersSort ===
+                "profit"
+            ) {
+
+                return (
+                    getOrderProfit(b) -
+                    getOrderProfit(a)
+                );
+            }
+
+
+            if (
+                ordersSort ===
+                "sale"
+            ) {
+
+                return (
+                    getOrderSale(b) -
+                    getOrderSale(a)
+                );
+            }
+
+
+            return 0;
+        }
+    );
+
+
+    return orders;
+}
+
+
+// =====================================================
+// ДОСТАВКА И ТТН В СПИСКЕ ЗАКАЗОВ
+// =====================================================
+
+const _baseRenderOrderCardsForShipping =
+    renderOrderCards;
+
+
+renderOrderCards =
+function () {
+
+    _baseRenderOrderCardsForShipping();
+
+
+    const orders =
+        getOrdersVisibleForCurrentList();
+
+
+    const cards =
+        document.querySelectorAll(
+            "#ordersList .orders-list-results .order-card"
+        );
+
+
+    cards.forEach(
+        (card, index) => {
+
+            const order =
+                orders[index];
+
+
+            if (!order) return;
+
+
+            const payment =
+                card.querySelector(
+                    ".order-payment"
+                );
+
+
+            if (!payment) return;
+
+
+            const city =
+                order.deliveryCity ||
+                "—";
+
+
+            const branch =
+                order.deliveryBranch ||
+                "—";
+
+
+            const ttn =
+                order.ttn ||
+                "—";
+
+
+            const summary =
+                document.createElement(
+                    "div"
+                );
+
+
+            summary.className =
+                "order-shipping-summary";
+
+
+            summary.innerHTML = `
+
+                <div>
+                    Доставка:
+                    <b>
+                        ${escapeHtml(city)}
+                    </b>,
+                    отделение
+                    <b>
+                        ${escapeHtml(branch)}
+                    </b>
+                </div>
+
+                <div>
+                    ТТН:
+                    <b>
+                        ${escapeHtml(ttn)}
+                    </b>
+                </div>
+            `;
+
+
+            payment.insertAdjacentElement(
+                "afterend",
+                summary
+            );
+        }
+    );
+};
+
+
+// =====================================================
+// ДОБАВЛЯЕМ ПУСТЫЕ ПОЛЯ В СТАРЫЕ ЗАКАЗЫ
+// =====================================================
+
+function migrateOrdersForShipping() {
+
+    const orders =
+        getOrders();
+
+
+    let changed =
+        false;
+
+
+    orders.forEach(
+        order => {
+
+            if (
+                order.deliveryCity == null
+            ) {
+
+                order.deliveryCity = "";
+
+                changed = true;
+            }
+
+
+            if (
+                order.deliveryBranch == null
+            ) {
+
+                order.deliveryBranch = "";
+
+                changed = true;
+            }
+
+
+            if (
+                order.ttn == null
+            ) {
+
+                order.ttn = "";
+
+                changed = true;
+            }
+        }
+    );
+
+
+    if (changed) {
+
+        saveOrders(
+            orders
+        );
+    }
+}
+
+
+// =====================================================
+// ИНИЦИАЛИЗАЦИЯ ОБНОВЛЕНИЯ
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        loadCatalog();
+
+        migrateOrdersForShipping();
+
+        addPhotoViewerStyles();
+
+        addShippingStyles();
+
+        addCustomProductStyles();
+    }
+);
