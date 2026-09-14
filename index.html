@@ -2,219 +2,146 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Расчёт заказов</title>
-
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-
-    <meta name="theme-color" content="#ffffff">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Print App">
+
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./style.css">
+
+    <title>Print App</title>
 </head>
 
 <body>
 
-<header class="header">
-    <h1>Новый заказ</h1>
-    <p>Печать и сувенирная продукция</p>
+<header class="app-header">
+    <div>
+        <h1 id="pageTitle">Новый заказ</h1>
+        <div class="header-subtitle" id="pageSubtitle">
+            Расчёт стоимости заказа
+        </div>
+    </div>
 </header>
 
+<main class="app-main">
 
-<main class="container">
+    <!-- ================= ЗАКАЗ ================= -->
 
-    <!-- ДАННЫЕ ЗАКАЗА -->
+    <section id="screenOrder" class="screen active">
 
-    <section class="card">
-
-        <h2>Данные заказа</h2>
-
-        <label for="clientName">Клиент</label>
-
-        <input
-            type="text"
-            id="clientName"
-            placeholder="Имя или название клиента"
-        >
-
-    </section>
-
-
-    <!-- ПОЗИЦИИ -->
-
-    <section class="card">
-
-        <div class="section-title">
-
-            <h2>Позиции заказа</h2>
-
-            <button
-                type="button"
-                class="small-button"
-                onclick="addPosition()"
+        <div class="card">
+            <label class="label">Клиент</label>
+            <input
+                id="clientName"
+                class="input"
+                type="text"
+                placeholder="Имя или название клиента"
             >
-                + Добавить позицию
-            </button>
-
         </div>
 
+        <div class="section-heading">
+            <h2>Позиции</h2>
+            <button class="small-button" onclick="addPosition()">
+                + Добавить
+            </button>
+        </div>
 
-        <div id="positions">
+        <div id="positions"></div>
 
-            <!-- Первая позиция создаётся автоматически -->
+        <div class="totals-card">
 
-            <div class="position">
+            <div class="total-row">
+                <span>Продажа</span>
+                <strong><span id="totalSale">0.00</span> грн</strong>
+            </div>
 
-                <div class="position-header">
+            <div class="total-row">
+                <span>Себестоимость</span>
+                <strong><span id="totalCost">0.00</span> грн</strong>
+            </div>
 
-                    <strong>Позиция 1</strong>
-
-                    <button
-                        type="button"
-                        class="delete-button"
-                        onclick="removePosition(this)"
-                    >
-                        ×
-                    </button>
-
-                </div>
-
-
-                <label>Категория</label>
-
-                <select
-                    class="category"
-                    onchange="updateProductOptions(this)"
-                >
-
-                    <option value="">
-                        Выберите категорию
-                    </option>
-
-                    <option value="diploma">
-                        Дипломы
-                    </option>
-
-                    <option value="cup_ready">
-                        Готовые чашки
-                    </option>
-
-                    <option value="cup_print">
-                        Печать чашка
-                    </option>
-
-                    <option value="cup_custom">
-                        Чашка
-                    </option>
-
-                    <option value="packaging">
-                        Упаковка для чашки
-                    </option>
-
-                    <option value="designer">
-                        Услуги дизайнера
-                    </option>
-
-                    <option value="urgent">
-                        Срочность
-                    </option>
-
-                </select>
-
-
-                <div class="product-area"></div>
-
-
-                <div class="manual-fields"></div>
-
-
-                <div class="price-info">
-
-                    <div>
-                        <span>Цена продажи:</span>
-                        <strong class="sale-price">0 грн</strong>
-                    </div>
-
-                    <div>
-                        <span>Себестоимость:</span>
-                        <strong class="cost-price">0 грн</strong>
-                    </div>
-
-                    <div>
-                        <span>Прибыль:</span>
-                        <strong class="profit-price">0 грн</strong>
-                    </div>
-
-                </div>
-
+            <div class="total-row profit-row">
+                <span>Прибыль</span>
+                <strong><span id="totalProfit">0.00</span> грн</strong>
             </div>
 
         </div>
 
-    </section>
+        <div class="main-actions">
+            <button class="primary-button" onclick="saveOrder()">
+                💾 Сохранить заказ
+            </button>
 
-
-    <!-- ИТОГО -->
-
-    <section class="card total-card">
-
-        <h2>Итого</h2>
-
-        <div class="total-row">
-
-            <span>Продажа</span>
-
-            <strong id="totalSale">
-                0 грн
-            </strong>
-
-        </div>
-
-
-        <div class="total-row">
-
-            <span>Себестоимость</span>
-
-            <strong id="totalCost">
-                0 грн
-            </strong>
-
-        </div>
-
-
-        <div class="total-row profit-row">
-
-            <span>Прибыль</span>
-
-            <strong id="totalProfit">
-                0 грн
-            </strong>
-
+            <button class="secondary-button" onclick="clearOrder()">
+                Очистить
+            </button>
         </div>
 
     </section>
 
 
-    <!-- КНОПКИ -->
+    <!-- ================= КАТАЛОГ ================= -->
 
-    <section class="actions">
+    <section id="screenCatalog" class="screen">
 
-        <button
-            type="button"
-            class="main-button"
-            onclick="saveOrder()"
-        >
-            Сохранить заказ
+        <div class="screen-intro">
+            <h2>Каталог</h2>
+            <p>Здесь можно изменить цены товаров и услуг.</p>
+        </div>
+
+        <div id="catalogContent"></div>
+
+        <button class="secondary-button catalog-reset-button"
+                onclick="resetCatalog()">
+            Восстановить цены по умолчанию
         </button>
 
+    </section>
 
-        <button
-            type="button"
-            class="secondary-button"
-            onclick="clearOrder()"
-        >
-            Очистить
+
+    <!-- ================= ЗАКАЗЫ ================= -->
+
+    <section id="screenOrders" class="screen">
+
+        <div class="screen-intro">
+            <h2>Сохранённые заказы</h2>
+            <p id="ordersCount">0 заказов</p>
+        </div>
+
+        <div id="ordersList"></div>
+
+    </section>
+
+
+    <!-- ================= НАСТРОЙКИ ================= -->
+
+    <section id="screenSettings" class="screen">
+
+        <div class="screen-intro">
+            <h2>Настройки</h2>
+            <p>Настройки приложения</p>
+        </div>
+
+        <div class="settings-card">
+            <div class="settings-title">Print App</div>
+            <div class="settings-text">
+                Приложение для расчёта заказов,
+                себестоимости и прибыли.
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="settings-title">Хранение данных</div>
+            <div class="settings-text">
+                Заказы и цены каталога сохраняются
+                непосредственно на устройстве.
+            </div>
+        </div>
+
+        <button class="danger-button" onclick="clearAllOrders()">
+            🗑 Удалить все сохранённые заказы
         </button>
 
     </section>
@@ -222,26 +149,76 @@
 </main>
 
 
-<!-- НИЖНЯЯ НАВИГАЦИЯ -->
+<!-- ================= МОДАЛЬНОЕ ОКНО ЗАКАЗА ================= -->
+
+<div id="orderModal" class="modal hidden">
+
+    <div class="modal-overlay" onclick="closeOrderModal()"></div>
+
+    <div class="modal-window">
+
+        <div class="modal-header">
+            <h2>Заказ</h2>
+            <button onclick="closeOrderModal()" class="close-button">
+                ×
+            </button>
+        </div>
+
+        <div id="orderModalContent"></div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= НИЖНЯЯ НАВИГАЦИЯ ================= -->
 
 <nav class="bottom-nav">
-    <button type="button" class="nav-item active" onclick="showOrder()">
+
+    <button
+        type="button"
+        class="nav-item active"
+        data-screen="order"
+        onclick="showOrder()"
+    >
         <span>🧮</span>
         <small>Заказ</small>
     </button>
 
-    <button type="button" class="nav-item" onclick="showCatalog()">
+    <button
+        type="button"
+        class="nav-item"
+        data-screen="catalog"
+        onclick="showCatalog()"
+    >
         <span>📦</span>
         <small>Каталог</small>
     </button>
 
-    <button type="button" class="nav-item" onclick="showOrders()">
+    <button
+        type="button"
+        class="nav-item"
+        data-screen="orders"
+        onclick="showOrders()"
+    >
         <span>📋</span>
         <small>Заказы</small>
     </button>
 
-    <button type="button" class="nav-item" onclick="showSettings()">
+    <button
+        type="button"
+        class="nav-item"
+        data-screen="settings"
+        onclick="showSettings()"
+    >
         <span>⚙️</span>
         <small>Настройки</small>
     </button>
+
 </nav>
+
+
+<script src="./app.js"></script>
+
+</body>
+</html>
