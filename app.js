@@ -2817,3 +2817,22 @@ if (
         }
     );
 }
+function showOrder() {
+    location.reload();
+}
+
+function showCatalog() {
+    if (typeof renderCatalog === "function") {
+        renderCatalog();
+    }
+}
+
+function showOrders() {
+    if (typeof renderOrders === "function") {
+        renderOrders();
+    }
+}
+
+function showSettings() {
+    alert("Настройки пока находятся в разработке.");
+}
