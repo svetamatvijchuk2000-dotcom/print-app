@@ -17527,3 +17527,600 @@ document.addEventListener(
         );
     }
 );
+
+// ============================================================
+// ЭКСПОРТ ДАННЫХ
+// CSV + JSON
+// ============================================================
+
+
+// ============================================================
+// СКАЧИВАНИЕ ФАЙЛА
+// ============================================================
+
+function downloadAppFile(filename, content, mimeType) {
+
+    const blob =
+        new Blob(
+            [content],
+            {
+                type: mimeType
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+
+    link.href =
+        url;
+
+
+    link.download =
+        filename;
+
+
+    document.body.appendChild(
+        link
+    );
+
+
+    link.click();
+
+
+    link.remove();
+
+
+    setTimeout(
+        () => {
+
+            URL.revokeObjectURL(
+                url
+            );
+
+        },
+        1000
+    );
+}
+
+
+
+// ============================================================
+// ТЕКУЩАЯ ДАТА ДЛЯ ИМЕНИ ФАЙЛА
+// ============================================================
+
+function exportDateStamp() {
+
+    const now =
+        new Date();
+
+
+    const year =
+        now.getFullYear();
+
+
+    const month =
+        String(
+            now.getMonth() + 1
+        )
+        .padStart(
+            2,
+            "0"
+        );
+
+
+    const day =
+        String(
+            now.getDate()
+        )
+        .padStart(
+            2,
+            "0"
+        );
+
+
+    return `${year}-${month}-${day}`;
+}
+
+
+
+// ============================================================
+// БЕЗОПАСНОЕ ЗНАЧЕНИЕ ДЛЯ CSV
+// ============================================================
+
+function csvValue(value) {
+
+    const text =
+        String(
+            value ?? ""
+        )
+        .replace(
+            /"/g,
+            '""'
+        );
+
+
+    return `"${text}"`;
+}
+
+
+
+// ============================================================
+// ФОРМАТ ДАТЫ
+// ============================================================
+
+function exportFormatDate(timestamp) {
+
+    if (!timestamp) {
+        return "";
+    }
+
+
+    const date =
+        new Date(
+            Number(timestamp)
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+    }
+
+
+    return date.toLocaleString(
+        "uk-UA"
+    );
+}
+
+
+
+// ============================================================
+// ПОЛУЧАЕМ НАЗВАНИЯ ПОЗИЦИЙ
+// ============================================================
+
+function exportOrderPositions(order) {
+
+    if (
+        !Array.isArray(
+            order.positions
+        )
+    ) {
+
+        return "";
+    }
+
+
+    return order.positions
+        .map(position => {
+
+            const name =
+                position.name
+                ||
+                position.productName
+                ||
+                position.product
+                ||
+                position.category
+                ||
+                "Позиция";
+
+
+            const quantity =
+                Number(
+                    position.quantity ||
+                    position.qty ||
+                    1
+                );
+
+
+            return `${name} × ${quantity}`;
+
+        })
+        .join("; ");
+}
+
+
+
+// ============================================================
+// ЭКСПОРТ ЗАКАЗОВ В CSV
+// ============================================================
+
+function exportOrdersToCSV() {
+
+    const orders =
+        getOrders();
+
+
+    if (!orders.length) {
+
+        alert(
+            "Нет заказов для экспорта."
+        );
+
+        return;
+    }
+
+
+    const rows = [];
+
+
+    // Заголовки
+
+    rows.push(
+        [
+            "Номер заказа",
+            "Дата",
+            "Клиент",
+            "Телефон",
+            "Канал продажи",
+            "Канал связи",
+            "Статус заказа",
+            "Статус оплаты",
+            "Город",
+            "Отделение",
+            "ТТН",
+            "Позиции",
+            "Продажа",
+            "Себестоимость",
+            "Прибыль",
+            "Комментарий"
+        ]
+        .map(
+            csvValue
+        )
+        .join(";")
+    );
+
+
+    orders.forEach(order => {
+
+        const row = [
+
+            order.number || "",
+
+            exportFormatDate(
+                order.createdAt
+            ),
+
+            order.client || "",
+
+            order.clientPhone || "",
+
+            order.salesChannel || "",
+
+            order.contactChannel || "",
+
+            order.status || "",
+
+            order.paymentStatus || "",
+
+            order.deliveryCity
+                ||
+                order.city
+                ||
+                "",
+
+            order.deliveryBranch
+                ||
+                order.branch
+                ||
+                "",
+
+            order.ttn
+                ||
+                order.deliveryTTN
+                ||
+                "",
+
+            exportOrderPositions(
+                order
+            ),
+
+            Number(
+                getOrderSale(order) ||
+                0
+            ),
+
+            Number(
+                getOrderCost(order) ||
+                0
+            ),
+
+            Number(
+                getOrderProfit(order) ||
+                0
+            ),
+
+            order.comment || ""
+
+        ];
+
+
+        rows.push(
+            row
+                .map(
+                    csvValue
+                )
+                .join(";")
+        );
+    });
+
+
+    // UTF-8 BOM нужен,
+    // чтобы Excel нормально открывал кириллицу
+
+    const csv =
+        "\uFEFF" +
+        rows.join(
+            "\n"
+        );
+
+
+    downloadAppFile(
+        `orders-${exportDateStamp()}.csv`,
+        csv,
+        "text/csv;charset=utf-8;"
+    );
+}
+
+
+
+// ============================================================
+// JSON — ПОЛНАЯ РЕЗЕРВНАЯ КОПИЯ
+// ============================================================
+
+function exportBackupJSON() {
+
+    const backup = {
+
+        app:
+            "Print App",
+
+        version:
+            1,
+
+        exportedAt:
+            new Date()
+                .toISOString(),
+
+        orders:
+            getOrders(),
+
+        catalog:
+            typeof catalog !==
+            "undefined"
+                ? catalog
+                : null
+    };
+
+
+    const json =
+        JSON.stringify(
+            backup,
+            null,
+            2
+        );
+
+
+    downloadAppFile(
+        `print-app-backup-${exportDateStamp()}.json`,
+        json,
+        "application/json;charset=utf-8;"
+    );
+}
+
+
+
+// ============================================================
+// ДОБАВЛЯЕМ БЛОК В НАСТРОЙКИ
+// ============================================================
+
+function addExportBlockToSettings() {
+
+    const settings =
+        document.getElementById(
+            "screenSettings"
+        );
+
+
+    if (!settings) {
+        return;
+    }
+
+
+    if (
+        document.getElementById(
+            "dataExportBlock"
+        )
+    ) {
+        return;
+    }
+
+
+    const block =
+        document.createElement(
+            "div"
+        );
+
+
+    block.id =
+        "dataExportBlock";
+
+
+    block.className =
+        "card export-data-card";
+
+
+    block.innerHTML = `
+
+        <div class="export-data-title">
+            Экспорт данных
+        </div>
+
+
+        <div class="export-data-description">
+
+            Сохранение заказов для таблиц
+            или резервной копии приложения.
+
+        </div>
+
+
+        <button
+            type="button"
+            class="export-data-button"
+            onclick="exportOrdersToCSV()"
+        >
+
+            📊 Экспорт заказов в CSV
+
+        </button>
+
+
+        <button
+            type="button"
+            class="export-data-button secondary"
+            onclick="exportBackupJSON()"
+        >
+
+            💾 Резервная копия JSON
+
+        </button>
+
+    `;
+
+
+    settings.appendChild(
+        block
+    );
+}
+
+
+
+// ============================================================
+// СТИЛИ
+// ============================================================
+
+function addExportStyles() {
+
+    if (
+        document.getElementById(
+            "exportDataStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "exportDataStyles";
+
+
+    style.textContent = `
+
+        .export-data-card {
+
+            margin-top: 14px;
+        }
+
+
+        .export-data-title {
+
+            margin-bottom: 4px;
+
+            font-size: 16px;
+
+            font-weight: 750;
+
+            color: #171b24;
+        }
+
+
+        .export-data-description {
+
+            margin-bottom: 12px;
+
+            font-size: 12px;
+
+            line-height: 1.4;
+
+            color: #7a808a;
+        }
+
+
+        .export-data-button {
+
+            width: 100%;
+
+            min-height: 44px;
+
+            margin-top: 8px;
+
+            padding: 10px 12px;
+
+            border: 0;
+
+            border-radius: 11px;
+
+            background: #1f83ff;
+
+            color: #fff;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            font-family: inherit;
+        }
+
+
+        .export-data-button.secondary {
+
+            background: #eceef1;
+
+            color: #222833;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addExportStyles();
+
+        addExportBlockToSettings();
+    }
+);
