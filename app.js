@@ -13064,3 +13064,921 @@ document.addEventListener(
         );
     }
 );
+
+// ============================================================
+// ЕДИНЫЕ СТАТУСЫ ЗАКАЗОВ ВО ВСЁМ ПРИЛОЖЕНИИ
+// ============================================================
+
+const UNIFIED_ORDER_STATUSES = [
+    "Новый",
+    "Принят",
+    "В печати",
+    "Отправлен",
+    "Завершён",
+    "Отменён"
+];
+
+
+// ============================================================
+// ПЕРЕВОД СТАРЫХ СТАТУСОВ
+// ============================================================
+
+function normalizeOrderStatus(status) {
+
+    const value =
+        String(status || "").trim();
+
+    switch (value) {
+
+        case "В работе":
+            return "Принят";
+
+        case "Готов":
+            return "В печати";
+
+        case "Выдан":
+            return "Завершён";
+
+        default:
+            return UNIFIED_ORDER_STATUSES.includes(value)
+                ? value
+                : "Новый";
+    }
+}
+
+
+// ============================================================
+// СОЗДАЁМ OPTIONS
+// ============================================================
+
+function unifiedOrderStatusOptions(selected) {
+
+    const current =
+        normalizeOrderStatus(selected);
+
+    return UNIFIED_ORDER_STATUSES
+        .map(status => `
+            <option
+                value="${status}"
+                ${status === current ? "selected" : ""}
+            >
+                ${status}
+            </option>
+        `)
+        .join("");
+}
+
+
+// ============================================================
+// ЦВЕТА
+// ============================================================
+
+function unifiedOrderStatusClass(status) {
+
+    switch (
+        normalizeOrderStatus(status)
+    ) {
+
+        case "Новый":
+            return "unified-status-new";
+
+        case "Принят":
+            return "unified-status-accepted";
+
+        case "В печати":
+            return "unified-status-printing";
+
+        case "Отправлен":
+            return "unified-status-sent";
+
+        case "Завершён":
+            return "unified-status-completed";
+
+        case "Отменён":
+            return "unified-status-cancelled";
+
+        default:
+            return "";
+    }
+}
+
+
+function applyUnifiedStatusColor(select) {
+
+    if (!select) return;
+
+    select.classList.remove(
+        "unified-status-new",
+        "unified-status-accepted",
+        "unified-status-printing",
+        "unified-status-sent",
+        "unified-status-completed",
+        "unified-status-cancelled",
+
+        // старые классы
+        "order-status-new",
+        "order-status-accepted",
+        "order-status-printing",
+        "order-status-sent",
+        "order-status-completed",
+        "order-status-cancelled"
+    );
+
+    const className =
+        unifiedOrderStatusClass(
+            select.value
+        );
+
+    if (className) {
+        select.classList.add(
+            className
+        );
+    }
+}
+
+
+// ============================================================
+// МИГРАЦИЯ ВСЕХ СТАРЫХ ЗАКАЗОВ
+// ============================================================
+
+function migrateAllOrderStatuses() {
+
+    const orders =
+        getOrders();
+
+    let changed =
+        false;
+
+    orders.forEach(order => {
+
+        const normalized =
+            normalizeOrderStatus(
+                order.status
+            );
+
+        if (
+            order.status !== normalized
+        ) {
+
+            order.status =
+                normalized;
+
+            changed =
+                true;
+        }
+    });
+
+
+    if (changed) {
+
+        saveOrders(
+            orders
+        );
+    }
+}
+
+
+// ============================================================
+// МЕНЯЕМ СТАТУС ПРЯМО ИЗ СПИСКА ЗАКАЗОВ
+// ============================================================
+
+function changeOrderStatusFromList(
+    orderId,
+    newStatus
+) {
+
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(
+            item =>
+                String(item.id) ===
+                String(orderId)
+        );
+
+    if (!order) {
+        return;
+    }
+
+
+    order.status =
+        normalizeOrderStatus(
+            newStatus
+        );
+
+
+    saveOrders(
+        orders
+    );
+
+
+    // обновляем список
+    renderOrderCards();
+}
+
+
+// ============================================================
+// НАХОДИМ ID ЗАКАЗА В КАРТОЧКЕ
+// ============================================================
+
+function getOrderIdFromCard(card) {
+
+    if (!card) {
+        return null;
+    }
+
+
+    // 1. data-order-id
+
+    if (card.dataset.orderId) {
+
+        return card.dataset.orderId;
+    }
+
+
+    // 2. ищем в кнопках / select onclick
+
+    const elements =
+        card.querySelectorAll(
+            "[onclick]"
+        );
+
+    for (
+        const element of elements
+    ) {
+
+        const onclick =
+            element.getAttribute(
+                "onclick"
+            ) || "";
+
+
+        const match =
+            onclick.match(
+                /\((['"]?)(\d+)\1/
+            );
+
+
+        if (match) {
+            return match[2];
+        }
+    }
+
+
+    // 3. пробуем найти номер заказа
+    // и сопоставить с orders
+
+    const text =
+        card.textContent || "";
+
+
+    const numberMatch =
+        text.match(
+            /Заказ\s*№\s*0*(\d+)/i
+        );
+
+
+    if (numberMatch) {
+
+        const number =
+            Number(
+                numberMatch[1]
+            );
+
+
+        const order =
+            getOrders().find(
+                item =>
+                    Number(
+                        item.number
+                    ) ===
+                    number
+            );
+
+
+        if (order) {
+            return order.id;
+        }
+    }
+
+
+    return null;
+}
+
+
+// ============================================================
+// ОБНОВЛЯЕМ СТАТУСЫ В ОБЩЕМ СПИСКЕ
+// ============================================================
+
+function makeOrderListStatusesUnified() {
+
+    const cards =
+        document.querySelectorAll(
+            "#ordersList .order-card"
+        );
+
+
+    cards.forEach(card => {
+
+        const orderId =
+            getOrderIdFromCard(
+                card
+            );
+
+
+        if (!orderId) {
+            return;
+        }
+
+
+        const order =
+            getOrders().find(
+                item =>
+                    String(item.id) ===
+                    String(orderId)
+            );
+
+
+        if (!order) {
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // ИЩЕМ СУЩЕСТВУЮЩИЙ SELECT СТАТУСА
+        // ----------------------------------------------------
+
+        let statusSelect =
+            null;
+
+
+        const selects =
+            card.querySelectorAll(
+                "select"
+            );
+
+
+        selects.forEach(select => {
+
+            const values =
+                Array.from(
+                    select.options
+                )
+                .map(
+                    option =>
+                        option.value
+                );
+
+
+            const statusWords = [
+                "Новый",
+                "В работе",
+                "Готов",
+                "Выдан",
+                "Отменён",
+                "Принят",
+                "В печати",
+                "Отправлен",
+                "Завершён"
+            ];
+
+
+            if (
+                values.some(
+                    value =>
+                        statusWords.includes(
+                            value
+                        )
+                )
+            ) {
+
+                statusSelect =
+                    select;
+            }
+        });
+
+
+        // ----------------------------------------------------
+        // ЕСЛИ SELECT УЖЕ ЕСТЬ
+        // ----------------------------------------------------
+
+        if (statusSelect) {
+
+            const currentStatus =
+                normalizeOrderStatus(
+                    order.status
+                );
+
+
+            statusSelect.innerHTML =
+                unifiedOrderStatusOptions(
+                    currentStatus
+                );
+
+
+            statusSelect.value =
+                currentStatus;
+
+
+            // Удаляем старые inline onchange,
+            // чтобы не было двойного сохранения
+
+            statusSelect.removeAttribute(
+                "onchange"
+            );
+
+
+            statusSelect.dataset.orderId =
+                order.id;
+
+
+            statusSelect.classList.add(
+                "unified-order-status-select"
+            );
+
+
+            applyUnifiedStatusColor(
+                statusSelect
+            );
+
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // ЕСЛИ SELECT В КАРТОЧКЕ ВООБЩЕ НЕТ —
+        // ДОБАВЛЯЕМ ЕГО
+        // ----------------------------------------------------
+
+        const block =
+            document.createElement(
+                "div"
+            );
+
+
+        block.className =
+            "unified-status-list-block";
+
+
+        block.innerHTML = `
+            <span class="unified-status-label">
+                Статус
+            </span>
+
+            <select
+                class="unified-order-status-select"
+                data-order-id="${order.id}"
+            >
+                ${unifiedOrderStatusOptions(
+                    order.status
+                )}
+            </select>
+        `;
+
+
+        const firstActions =
+            card.querySelector(
+                ".order-actions"
+            );
+
+
+        if (firstActions) {
+
+            firstActions.insertAdjacentElement(
+                "beforebegin",
+                block
+            );
+
+        } else {
+
+            card.appendChild(
+                block
+            );
+        }
+
+
+        applyUnifiedStatusColor(
+            block.querySelector(
+                "select"
+            )
+        );
+    });
+}
+
+
+// ============================================================
+// ИЗМЕНЕНИЕ СТАТУСА ПРЯМО В СПИСКЕ
+// ============================================================
+
+document.addEventListener(
+    "change",
+    event => {
+
+        const select =
+            event.target.closest(
+                ".unified-order-status-select"
+            );
+
+
+        if (!select) {
+            return;
+        }
+
+
+        const orderId =
+            select.dataset.orderId;
+
+
+        if (!orderId) {
+            return;
+        }
+
+
+        applyUnifiedStatusColor(
+            select
+        );
+
+
+        changeOrderStatusFromList(
+            orderId,
+            select.value
+        );
+    }
+);
+
+
+// ============================================================
+// СТАТУС В РЕДАКТИРОВАНИИ ЗАКАЗА
+// ============================================================
+
+function makeUnifiedOrderStatusOptions(
+    selected
+) {
+
+    return unifiedOrderStatusOptions(
+        selected
+    );
+}
+
+
+// ============================================================
+// ОБНОВЛЯЕМ СТАТУС В ОКНЕ РЕДАКТИРОВАНИЯ
+// ============================================================
+
+function updateEditorStatusSelect() {
+
+    const select =
+        document.getElementById(
+            "editUnifiedOrderStatus"
+        );
+
+
+    if (!select) {
+        return;
+    }
+
+
+    const current =
+        normalizeOrderStatus(
+            select.value
+        );
+
+
+    select.innerHTML =
+        unifiedOrderStatusOptions(
+            current
+        );
+
+
+    select.value =
+        current;
+
+
+    applyUnifiedStatusColor(
+        select
+    );
+}
+
+
+// ============================================================
+// ОБНОВЛЯЕМ СТАТУСЫ ПОСЛЕ renderOrderCards()
+// ============================================================
+
+const _renderOrderCardsUnifiedFinal =
+    renderOrderCards;
+
+
+renderOrderCards = function () {
+
+    _renderOrderCardsUnifiedFinal();
+
+
+    setTimeout(
+        () => {
+
+            makeOrderListStatusesUnified();
+
+        },
+        0
+    );
+};
+
+
+// ============================================================
+// ОБНОВЛЯЕМ ПОСЛЕ renderOrderDetails()
+// ============================================================
+
+const _renderOrderDetailsUnifiedFinal =
+    renderOrderDetails;
+
+
+renderOrderDetails = function (
+    order
+) {
+
+    _renderOrderDetailsUnifiedFinal(
+        order
+    );
+
+
+    setTimeout(
+        () => {
+
+            updateEditorStatusSelect();
+
+        },
+        0
+    );
+};
+
+
+// ============================================================
+// ОБНОВЛЯЕМ ПОСЛЕ renderOrderEditor()
+// ============================================================
+
+const _renderOrderEditorUnifiedFinal =
+    renderOrderEditor;
+
+
+renderOrderEditor = function (
+    order
+) {
+
+    _renderOrderEditorUnifiedFinal(
+        order
+    );
+
+
+    setTimeout(
+        () => {
+
+            updateEditorStatusSelect();
+
+        },
+        0
+    );
+};
+
+
+// ============================================================
+// ЦВЕТ В РЕДАКТОРЕ ПРИ ИЗМЕНЕНИИ
+// ============================================================
+
+document.addEventListener(
+    "change",
+    event => {
+
+        if (
+            event.target.id !==
+            "editUnifiedOrderStatus"
+        ) {
+            return;
+        }
+
+
+        applyUnifiedStatusColor(
+            event.target
+        );
+    }
+);
+
+
+// ============================================================
+// СТИЛИ
+// ============================================================
+
+function addUnifiedOrderStatusStyles() {
+
+    const old =
+        document.getElementById(
+            "unifiedOrderStatusStyles"
+        );
+
+
+    if (old) {
+        old.remove();
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "unifiedOrderStatusStyles";
+
+
+    style.textContent = `
+
+        /* ==============================
+           ОБЩИЙ ВИД SELECT
+        ============================== */
+
+        .unified-order-status-select,
+        #editUnifiedOrderStatus {
+
+            width: 100%;
+
+            min-height: 38px;
+
+            padding: 7px 30px 7px 10px;
+
+            border-radius: 10px;
+
+            border: 1px solid;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            box-sizing: border-box;
+        }
+
+
+        /* ==============================
+           НОВЫЙ
+        ============================== */
+
+        .unified-status-new {
+
+            background:
+                #e8f3ff !important;
+
+            color:
+                #1769aa !important;
+
+            border-color:
+                #b9d9f5 !important;
+        }
+
+
+        /* ==============================
+           ПРИНЯТ
+        ============================== */
+
+        .unified-status-accepted {
+
+            background:
+                #fff1df !important;
+
+            color:
+                #ad6200 !important;
+
+            border-color:
+                #f2c889 !important;
+        }
+
+
+        /* ==============================
+           В ПЕЧАТИ
+        ============================== */
+
+        .unified-status-printing {
+
+            background:
+                #f1eaff !important;
+
+            color:
+                #7044b8 !important;
+
+            border-color:
+                #cfbdf1 !important;
+        }
+
+
+        /* ==============================
+           ОТПРАВЛЕН
+        ============================== */
+
+        .unified-status-sent {
+
+            background:
+                #e3f8ed !important;
+
+            color:
+                #187f4b !important;
+
+            border-color:
+                #a9ddc0 !important;
+        }
+
+
+        /* ==============================
+           ЗАВЕРШЁН
+        ============================== */
+
+        .unified-status-completed {
+
+            background:
+                #eeeeee !important;
+
+            color:
+                #555 !important;
+
+            border-color:
+                #cccccc !important;
+        }
+
+
+        /* ==============================
+           ОТМЕНЁН
+        ============================== */
+
+        .unified-status-cancelled {
+
+            background:
+                #ffe9e9 !important;
+
+            color:
+                #bd2929 !important;
+
+            border-color:
+                #efb5b5 !important;
+        }
+
+
+        /* ==============================
+           БЛОК В СПИСКЕ ЗАКАЗОВ
+        ============================== */
+
+        .unified-status-list-block {
+
+            display: grid;
+
+            grid-template-columns:
+                70px 1fr;
+
+            align-items: center;
+
+            gap: 8px;
+
+            margin-top: 8px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .unified-status-label {
+
+            font-size: 12px;
+
+            color: #777;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addUnifiedOrderStatusStyles();
+
+        migrateAllOrderStatuses();
+
+
+        setTimeout(
+            () => {
+
+                renderOrderCards();
+
+                makeOrderListStatusesUnified();
+
+            },
+            0
+        );
+    }
+);
