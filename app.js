@@ -7545,3 +7545,1205 @@ document.addEventListener(
         addCustomProductStyles();
     }
 );
+
+// =====================================================
+// ЕДИНОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+// 1. Цвет статуса заказа
+// 2. Цвет статуса оплаты
+// 3. Компактный дизайн страницы "Новый заказ"
+// =====================================================
+
+
+// =====================================================
+// 1. ЦВЕТ СТАТУСА ЗАКАЗА
+// =====================================================
+
+function getOrderStatusColorClass(status) {
+
+    const value = String(status || "")
+        .trim()
+        .toLowerCase();
+
+
+    if (value === "новый") {
+        return "status-new";
+    }
+
+    if (value === "в работе") {
+        return "status-work";
+    }
+
+    if (value === "готов") {
+        return "status-ready";
+    }
+
+    if (value === "выдан") {
+        return "status-done";
+    }
+
+    if (
+        value === "отменён" ||
+        value === "отменен"
+    ) {
+        return "status-cancelled";
+    }
+
+    return "";
+}
+
+
+// =====================================================
+// 2. ОПРЕДЕЛЯЕМ SELECT СТАТУСА ЗАКАЗА
+// =====================================================
+
+function isOrderStatusSelect(select) {
+
+    if (!select?.options) {
+        return false;
+    }
+
+    const options = Array
+        .from(select.options)
+        .map(option =>
+            option.textContent
+                .trim()
+                .toLowerCase()
+        );
+
+
+    return (
+        options.includes("новый") &&
+        (
+            options.includes("в работе") ||
+            options.includes("готов")
+        )
+    );
+}
+
+
+// =====================================================
+// 3. ОПРЕДЕЛЯЕМ SELECT ОПЛАТЫ
+// =====================================================
+
+function isPaymentStatusSelect(select) {
+
+    if (!select?.options) {
+        return false;
+    }
+
+    const options = Array
+        .from(select.options)
+        .map(option =>
+            option.textContent
+                .trim()
+                .toLowerCase()
+        );
+
+
+    return (
+        options.some(
+            value =>
+                value.includes("не оплач")
+        )
+        ||
+        options.some(
+            value =>
+                value.includes("предоплат")
+        )
+        ||
+        options.includes("оплачено")
+    );
+}
+
+
+// =====================================================
+// 4. ЦВЕТА СТАТУСОВ ЗАКАЗОВ
+// =====================================================
+
+function applyOrderStatusColors() {
+
+    document
+        .querySelectorAll(
+            "#ordersList select, #orderModal select"
+        )
+        .forEach(select => {
+
+            if (
+                !isOrderStatusSelect(select)
+            ) {
+                return;
+            }
+
+
+            select.classList.remove(
+                "status-new",
+                "status-work",
+                "status-ready",
+                "status-done",
+                "status-cancelled"
+            );
+
+
+            select.classList.add(
+                "order-status-colored"
+            );
+
+
+            const currentStatus =
+                select.options[
+                    select.selectedIndex
+                ]?.textContent ||
+                select.value ||
+                "";
+
+
+            const colorClass =
+                getOrderStatusColorClass(
+                    currentStatus
+                );
+
+
+            if (colorClass) {
+
+                select.classList.add(
+                    colorClass
+                );
+            }
+
+
+            if (
+                !select.dataset
+                    .orderStatusColorListener
+            ) {
+
+                select.dataset
+                    .orderStatusColorListener =
+                    "1";
+
+
+                select.addEventListener(
+                    "change",
+                    () => {
+
+                        setTimeout(
+                            applyInterfaceColors,
+                            0
+                        );
+                    }
+                );
+            }
+        });
+}
+
+
+// =====================================================
+// 5. ЦВЕТА СТАТУСА ОПЛАТЫ
+// =====================================================
+
+function applyPaymentStatusColors() {
+
+    document
+        .querySelectorAll(
+            "#ordersList select, #orderModal select"
+        )
+        .forEach(select => {
+
+            if (
+                !isPaymentStatusSelect(select)
+            ) {
+                return;
+            }
+
+
+            select.classList.remove(
+                "payment-paid",
+                "payment-partial",
+                "payment-unpaid"
+            );
+
+
+            select.classList.add(
+                "payment-status-colored"
+            );
+
+
+            const value =
+                (
+                    select.options[
+                        select.selectedIndex
+                    ]?.textContent ||
+                    select.value ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+
+            // Сначала проверяем
+            // "не оплачено",
+            // чтобы слово "оплачено"
+            // не сработало раньше
+
+            if (
+                value.includes(
+                    "не оплач"
+                )
+            ) {
+
+                select.classList.add(
+                    "payment-unpaid"
+                );
+            }
+
+            else if (
+                value.includes(
+                    "частич"
+                )
+                ||
+                value.includes(
+                    "предоплат"
+                )
+            ) {
+
+                select.classList.add(
+                    "payment-partial"
+                );
+            }
+
+            else if (
+                value === "оплачено"
+                ||
+                value === "оплачен"
+                ||
+                value.includes(
+                    "полностью оплач"
+                )
+            ) {
+
+                select.classList.add(
+                    "payment-paid"
+                );
+            }
+
+
+            if (
+                !select.dataset
+                    .paymentColorListener
+            ) {
+
+                select.dataset
+                    .paymentColorListener =
+                    "1";
+
+
+                select.addEventListener(
+                    "change",
+                    () => {
+
+                        setTimeout(
+                            applyInterfaceColors,
+                            0
+                        );
+                    }
+                );
+            }
+        });
+}
+
+
+// =====================================================
+// ОБЩЕЕ ОБНОВЛЕНИЕ ЦВЕТОВ
+// =====================================================
+
+function applyInterfaceColors() {
+
+    applyOrderStatusColors();
+
+    applyPaymentStatusColors();
+}
+
+
+// =====================================================
+// 6. СТИЛИ СТАТУСОВ
+// =====================================================
+
+function addOrderInterfaceStyles() {
+
+    if (
+        document.getElementById(
+            "orderInterfaceStylesV2"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "orderInterfaceStylesV2";
+
+
+    style.textContent = `
+
+        /* =====================================
+           ЦВЕТНЫЕ СТАТУСЫ
+        ===================================== */
+
+        .order-status-colored,
+        .payment-status-colored {
+
+            border: 0 !important;
+
+            border-radius:
+                10px !important;
+
+            font-weight:
+                700 !important;
+
+            padding:
+                8px 30px 8px 10px !important;
+
+            transition:
+                background-color .2s ease,
+                color .2s ease;
+
+            -webkit-appearance:
+                auto;
+        }
+
+
+        /* НОВЫЙ */
+
+        .order-status-colored.status-new {
+
+            background:
+                #E8F3FF !important;
+
+            color:
+                #1677C8 !important;
+        }
+
+
+        /* В РАБОТЕ */
+
+        .order-status-colored.status-work {
+
+            background:
+                #FFF1D6 !important;
+
+            color:
+                #B66A00 !important;
+        }
+
+
+        /* ГОТОВ */
+
+        .order-status-colored.status-ready {
+
+            background:
+                #E4F7E9 !important;
+
+            color:
+                #25823C !important;
+        }
+
+
+        /* ВЫДАН */
+
+        .order-status-colored.status-done {
+
+            background:
+                #ECEEF1 !important;
+
+            color:
+                #62676F !important;
+        }
+
+
+        /* ОТМЕНЁН */
+
+        .order-status-colored.status-cancelled {
+
+            background:
+                #FFE7E7 !important;
+
+            color:
+                #C93434 !important;
+        }
+
+
+
+        /* =====================================
+           ОПЛАТА
+        ===================================== */
+
+        /* ОПЛАЧЕНО */
+
+        .payment-status-colored.payment-paid {
+
+            background:
+                #E4F7E9 !important;
+
+            color:
+                #25823C !important;
+        }
+
+
+        /* ЧАСТИЧНАЯ ПРЕДОПЛАТА */
+
+        .payment-status-colored.payment-partial {
+
+            background:
+                #E4F7E9 !important;
+
+            color:
+                #25823C !important;
+        }
+
+
+        /* НЕ ОПЛАЧЕНО */
+
+        .payment-status-colored.payment-unpaid {
+
+            background:
+                #FFE7E7 !important;
+
+            color:
+                #C93434 !important;
+        }
+
+
+
+        /* ==================================================
+           НОВЫЙ ЗАКАЗ
+           ОБЩАЯ КОМПАКТНОСТЬ
+        ================================================== */
+
+        #screenOrder {
+
+            padding-bottom:
+                calc(
+                    90px +
+                    env(safe-area-inset-bottom)
+                );
+        }
+
+
+        #screenOrder .card {
+
+            padding:
+                12px !important;
+
+            margin-bottom:
+                10px !important;
+
+            border-radius:
+                14px !important;
+        }
+
+
+
+        /* ==================================================
+           КЛИЕНТ
+        ================================================== */
+
+        #screenOrder #clientName {
+
+            width: 100%;
+
+            min-height:
+                42px !important;
+
+            height:
+                42px !important;
+
+            box-sizing:
+                border-box;
+
+            padding:
+                0 11px !important;
+
+            border-radius:
+                10px !important;
+
+            font-size:
+                16px !important;
+        }
+
+
+        #screenOrder label {
+
+            font-size:
+                12px;
+
+            font-weight:
+                600;
+        }
+
+
+
+        /* ==================================================
+           ЗАГОЛОВОК ПОЗИЦИЙ
+        ================================================== */
+
+        #screenOrder .section-heading {
+
+            margin:
+                8px 0 !important;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                8px;
+        }
+
+
+        #screenOrder .section-heading h2 {
+
+            margin:
+                0 !important;
+
+            font-size:
+                18px !important;
+
+            line-height:
+                1.2;
+        }
+
+
+
+        /* ==================================================
+           КНОПКА ДОБАВИТЬ ПОЗИЦИЮ
+        ================================================== */
+
+        #screenOrder .section-heading button,
+        #screenOrder .small-button {
+
+            min-height:
+                38px !important;
+
+            padding:
+                7px 12px !important;
+
+            border-radius:
+                10px !important;
+
+            font-size:
+                13px !important;
+
+            font-weight:
+                700 !important;
+        }
+
+
+
+        /* ==================================================
+           КАРТОЧКА ПОЗИЦИИ
+        ================================================== */
+
+        #screenOrder .position-card {
+
+            position:
+                relative;
+
+            padding:
+                10px !important;
+
+            margin-bottom:
+                10px !important;
+
+            border-radius:
+                15px !important;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0,0,0,.04);
+
+            overflow:
+                hidden;
+        }
+
+
+
+        /* ==================================================
+           ШАПКА ПОЗИЦИИ
+        ================================================== */
+
+        #screenOrder .position-header {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-between;
+
+            gap:
+                8px;
+
+            margin-bottom:
+                8px !important;
+
+            padding-bottom:
+                7px;
+
+            border-bottom:
+                1px solid
+                rgba(0,0,0,.06);
+        }
+
+
+        #screenOrder .position-header strong {
+
+            font-size:
+                14px;
+
+            font-weight:
+                800;
+        }
+
+
+
+        /* ==================================================
+           УДАЛЕНИЕ ПОЗИЦИИ
+        ================================================== */
+
+        #screenOrder .delete-position {
+
+            display:
+                flex !important;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            width:
+                32px !important;
+
+            min-width:
+                32px !important;
+
+            height:
+                32px !important;
+
+            min-height:
+                32px !important;
+
+            padding:
+                0 !important;
+
+            border-radius:
+                50% !important;
+
+            font-size:
+                20px !important;
+
+            line-height:
+                1 !important;
+        }
+
+
+
+        /* ==================================================
+           ПОЛЯ В ПОЗИЦИИ
+        ================================================== */
+
+        #screenOrder
+        .position-card
+        .field {
+
+            margin-bottom:
+                7px !important;
+        }
+
+
+        #screenOrder
+        .position-card
+        .field label {
+
+            display:
+                block;
+
+            margin-bottom:
+                3px !important;
+
+            font-size:
+                11px !important;
+
+            line-height:
+                1.2;
+
+            color:
+                #6B7280;
+        }
+
+
+        #screenOrder
+        .position-card input,
+
+        #screenOrder
+        .position-card select {
+
+            width:
+                100% !important;
+
+            min-width:
+                0;
+
+            height:
+                40px !important;
+
+            min-height:
+                40px !important;
+
+            box-sizing:
+                border-box;
+
+            padding:
+                0 9px !important;
+
+            border-radius:
+                9px !important;
+
+            font-size:
+                16px !important;
+        }
+
+
+
+        /* ==================================================
+           КАТЕГОРИЯ + ИЗДЕЛИЕ
+           СТАВИМ РЯДОМ
+        ================================================== */
+
+        #screenOrder
+        .position-card {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            column-gap:
+                8px;
+
+            row-gap:
+                0;
+        }
+
+
+        #screenOrder
+        .position-header {
+
+            grid-column:
+                1 / -1;
+        }
+
+
+        #screenOrder
+        .position-card
+        > .extra-field {
+
+            grid-column:
+                1 / -1;
+        }
+
+
+        #screenOrder
+        .position-card
+        > .extra-field:empty {
+
+            display:
+                none;
+        }
+
+
+
+        /* ==================================================
+           ЦЕНА И СЕБЕСТОИМОСТЬ
+        ================================================== */
+
+        #screenOrder .manual-prices {
+
+            grid-column:
+                1 / -1;
+
+            display:
+                grid !important;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            gap:
+                8px !important;
+
+            margin:
+                0 !important;
+        }
+
+
+
+        /* ==================================================
+           ИТОГ ПО ПОЗИЦИИ
+        ================================================== */
+
+        #screenOrder .position-total {
+
+            grid-column:
+                1 / -1;
+
+            display:
+                grid !important;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(0, 1fr)
+                );
+
+            gap:
+                4px;
+
+            margin-top:
+                2px !important;
+
+            padding:
+                8px !important;
+
+            border-radius:
+                10px !important;
+
+            background:
+                rgba(0,0,0,.025);
+        }
+
+
+        #screenOrder
+        .position-total > div {
+
+            min-width:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                2px;
+
+            font-size:
+                10px !important;
+
+            line-height:
+                1.2;
+
+            color:
+                #6B7280;
+        }
+
+
+        #screenOrder
+        .position-total strong {
+
+            display:
+                block;
+
+            font-size:
+                12px !important;
+
+            color:
+                #111827;
+
+            white-space:
+                nowrap;
+
+            overflow:
+                hidden;
+
+            text-overflow:
+                ellipsis;
+        }
+
+
+
+        /* ==================================================
+           ОБЩИЕ ИТОГИ ЗАКАЗА
+        ================================================== */
+
+        #screenOrder .totals-card {
+
+            padding:
+                10px 12px !important;
+
+            margin-top:
+                10px !important;
+
+            margin-bottom:
+                9px !important;
+
+            border-radius:
+                14px !important;
+        }
+
+
+        #screenOrder .total-row {
+
+            min-height:
+                27px;
+
+            padding:
+                3px 0 !important;
+
+            font-size:
+                13px !important;
+        }
+
+
+        #screenOrder .total-row strong {
+
+            font-size:
+                14px !important;
+        }
+
+
+        #screenOrder .profit-row {
+
+            margin-top:
+                3px;
+
+            padding-top:
+                7px !important;
+
+            font-size:
+                15px !important;
+        }
+
+
+        #screenOrder .profit-row strong {
+
+            font-size:
+                17px !important;
+        }
+
+
+
+        /* ==================================================
+           СОХРАНИТЬ / ОЧИСТИТЬ
+        ================================================== */
+
+        #screenOrder .main-actions {
+
+            display:
+                grid !important;
+
+            grid-template-columns:
+                minmax(0, 2fr)
+                minmax(0, 1fr);
+
+            gap:
+                8px !important;
+
+            margin-top:
+                8px !important;
+        }
+
+
+        #screenOrder
+        .main-actions button {
+
+            width:
+                100%;
+
+            min-height:
+                46px !important;
+
+            margin:
+                0 !important;
+
+            padding:
+                9px 8px !important;
+
+            border-radius:
+                11px !important;
+
+            font-size:
+                14px !important;
+
+            font-weight:
+                700 !important;
+        }
+
+
+
+        /* ==================================================
+           IPHONE / УЗКИЙ ЭКРАН
+        ================================================== */
+
+        @media
+        (max-width: 430px) {
+
+            #screenOrder .card {
+
+                padding:
+                    10px !important;
+            }
+
+
+            #screenOrder
+            .position-card {
+
+                padding:
+                    9px !important;
+
+                column-gap:
+                    7px;
+            }
+
+
+            #screenOrder
+            .position-card input,
+
+            #screenOrder
+            .position-card select {
+
+                height:
+                    39px !important;
+
+                min-height:
+                    39px !important;
+            }
+
+
+            #screenOrder
+            .position-total {
+
+                padding:
+                    7px !important;
+            }
+        }
+
+
+
+        /* ==================================================
+           ОЧЕНЬ УЗКИЙ ЭКРАН
+        ================================================== */
+
+        @media
+        (max-width: 350px) {
+
+            #screenOrder
+            .position-card {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            #screenOrder
+            .position-header,
+
+            #screenOrder
+            .position-card
+            > .extra-field,
+
+            #screenOrder
+            .manual-prices,
+
+            #screenOrder
+            .position-total {
+
+                grid-column:
+                    1;
+            }
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// 7. ОБНОВЛЯЕМ ЦВЕТА ПОСЛЕ ОТРИСОВКИ СПИСКА
+// =====================================================
+
+const _renderOrderCardsUnifiedUI =
+    renderOrderCards;
+
+
+renderOrderCards = function () {
+
+    _renderOrderCardsUnifiedUI();
+
+    setTimeout(
+        applyInterfaceColors,
+        0
+    );
+};
+
+
+// =====================================================
+// 8. ОБНОВЛЯЕМ ЦВЕТА В ОТКРЫТОМ ЗАКАЗЕ
+// =====================================================
+
+const _renderOrderDetailsUnifiedUI =
+    renderOrderDetails;
+
+
+renderOrderDetails = function (order) {
+
+    _renderOrderDetailsUnifiedUI(
+        order
+    );
+
+    setTimeout(
+        applyInterfaceColors,
+        0
+    );
+};
+
+
+// =====================================================
+// 9. ЗАПУСК
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addOrderInterfaceStyles();
+
+        setTimeout(
+            applyInterfaceColors,
+            100
+        );
+    }
+);
