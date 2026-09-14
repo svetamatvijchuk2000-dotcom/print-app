@@ -109,13 +109,32 @@ const DEFAULT_READY_CUPS = {
 };
 
 
+// ---------- СТАТУСЫ ----------
+
+const ORDER_STATUSES = [
+    "Новый",
+    "В работе",
+    "Готов",
+    "Выдан",
+    "Отменён"
+];
+
+const PAYMENT_STATUSES = [
+    "Не оплачено",
+    "Частично оплачено",
+    "Оплачено"
+];
+
+
 // ---------- КАТАЛОГ ----------
 
 function loadCatalog() {
     let catalog;
 
     try {
-        catalog = JSON.parse(localStorage.getItem("printAppCatalog"));
+        catalog = JSON.parse(
+            localStorage.getItem("printAppCatalog")
+        );
     } catch (e) {
         catalog = null;
     }
@@ -128,15 +147,15 @@ function loadCatalog() {
     }
 
     if (!catalog.diplomaPrices) {
-        catalog.diplomaPrices = structuredClone(DEFAULT_DIPLOMA_PRICES);
+        catalog.diplomaPrices =
+            structuredClone(DEFAULT_DIPLOMA_PRICES);
     }
 
     if (!catalog.readyCups) {
-        catalog.readyCups = structuredClone(DEFAULT_READY_CUPS);
+        catalog.readyCups =
+            structuredClone(DEFAULT_READY_CUPS);
     }
 
-    // Миграция старого формата чашек:
-    // раньше было price, теперь sale + cost
     Object.keys(catalog.readyCups).forEach(key => {
         const cup = catalog.readyCups[key];
 
@@ -149,10 +168,14 @@ function loadCatalog() {
         }
     });
 
-    localStorage.setItem("printAppCatalog", JSON.stringify(catalog));
+    localStorage.setItem(
+        "printAppCatalog",
+        JSON.stringify(catalog)
+    );
 
     return catalog;
 }
+
 
 function saveCatalog(catalog) {
     localStorage.setItem(
@@ -162,21 +185,22 @@ function saveCatalog(catalog) {
 }
 
 
-// ---------- ПОЗИЦИИ ЗАКАЗА ----------
+// ---------- ПОЗИЦИИ НОВОГО ЗАКАЗА ----------
 
 let positionCounter = 0;
 
 function addPosition() {
     positionCounter++;
 
-    const container = document.getElementById("positions");
+    const container =
+        document.getElementById("positions");
 
     if (!container) return;
 
-    const position = document.createElement("div");
+    const position =
+        document.createElement("div");
 
     position.className = "position-card";
-
     position.dataset.position = positionCounter;
 
     position.innerHTML = `
@@ -217,7 +241,9 @@ function addPosition() {
                 class="position-product"
                 onchange="updateDiploma(this)"
             >
-                <option value="">Сначала выберите категорию</option>
+                <option value="">
+                    Сначала выберите категорию
+                </option>
             </select>
         </div>
 
@@ -236,6 +262,7 @@ function addPosition() {
         </div>
 
         <div class="manual-prices">
+
             <div class="field">
                 <label>Цена продажи / шт.</label>
 
@@ -261,23 +288,32 @@ function addPosition() {
                     oninput="calculateAll()"
                 >
             </div>
+
         </div>
 
         <div class="position-total">
+
             <div>
                 Продажа:
-                <strong class="position-sale-total">0 грн</strong>
+                <strong class="position-sale-total">
+                    0 грн
+                </strong>
             </div>
 
             <div>
                 Себестоимость:
-                <strong class="position-cost-total">0 грн</strong>
+                <strong class="position-cost-total">
+                    0 грн
+                </strong>
             </div>
 
             <div>
                 Прибыль:
-                <strong class="position-profit-total">0 грн</strong>
+                <strong class="position-profit-total">
+                    0 грн
+                </strong>
             </div>
+
         </div>
     `;
 
@@ -292,7 +328,8 @@ function addPosition() {
 
 
 function removePosition(button) {
-    const position = button.closest(".position-card");
+    const position =
+        button.closest(".position-card");
 
     if (position) {
         position.remove();
@@ -307,10 +344,15 @@ function renumberPositions() {
     document
         .querySelectorAll("#positions .position-card")
         .forEach((position, index) => {
-            const title = position.querySelector(".position-header strong");
+
+            const title =
+                position.querySelector(
+                    ".position-header strong"
+                );
 
             if (title) {
-                title.textContent = `Позиция ${index + 1}`;
+                title.textContent =
+                    `Позиция ${index + 1}`;
             }
         });
 }
@@ -319,13 +361,19 @@ function renumberPositions() {
 // ---------- ВЫБОР ТОВАРА ----------
 
 function updateProductOptions(categorySelect) {
-    const position = categorySelect.closest(".position-card");
+    const position =
+        categorySelect.closest(".position-card");
 
     if (!position) return;
 
-    const category = categorySelect.value;
-    const product = position.querySelector(".position-product");
-    const extra = position.querySelector(".extra-field");
+    const category =
+        categorySelect.value;
+
+    const product =
+        position.querySelector(".position-product");
+
+    const extra =
+        position.querySelector(".extra-field");
 
     if (!product) return;
 
@@ -333,9 +381,8 @@ function updateProductOptions(categorySelect) {
     extra.innerHTML = "";
 
     if (!category) {
-        product.innerHTML = `
-            <option value="">Выберите изделие</option>
-        `;
+        product.innerHTML =
+            `<option value="">Выберите изделие</option>`;
 
         calculateAll();
         return;
@@ -344,33 +391,35 @@ function updateProductOptions(categorySelect) {
     if (category === "diploma") {
         const catalog = loadCatalog();
 
-        product.innerHTML = `
-            <option value="">Выберите диплом</option>
-        `;
+        product.innerHTML =
+            `<option value="">Выберите диплом</option>`;
 
-        Object.entries(catalog.diplomaPrices).forEach(([key, item]) => {
-            product.innerHTML += `
-                <option value="${escapeHtml(key)}">
-                    ${escapeHtml(item.name)}
-                </option>
-            `;
-        });
+        Object.entries(catalog.diplomaPrices)
+            .forEach(([key, item]) => {
+
+                product.innerHTML += `
+                    <option value="${escapeHtml(key)}">
+                        ${escapeHtml(item.name)}
+                    </option>
+                `;
+            });
     }
 
     if (category === "cup_ready") {
         const catalog = loadCatalog();
 
-        product.innerHTML = `
-            <option value="">Выберите чашку</option>
-        `;
+        product.innerHTML =
+            `<option value="">Выберите чашку</option>`;
 
-        Object.entries(catalog.readyCups).forEach(([key, item]) => {
-            product.innerHTML += `
-                <option value="${escapeHtml(key)}">
-                    ${escapeHtml(item.name)}
-                </option>
-            `;
-        });
+        Object.entries(catalog.readyCups)
+            .forEach(([key, item]) => {
+
+                product.innerHTML += `
+                    <option value="${escapeHtml(key)}">
+                        ${escapeHtml(item.name)}
+                    </option>
+                `;
+            });
     }
 
     if (category === "cup_print") {
@@ -442,14 +491,18 @@ function updateProductOptions(categorySelect) {
 
 
 function updateDiploma(productSelect) {
-    const position = productSelect.closest(".position-card");
+    const position =
+        productSelect.closest(".position-card");
 
     if (!position) return;
 
     const category =
-        position.querySelector(".position-category")?.value;
+        position.querySelector(
+            ".position-category"
+        )?.value;
 
-    const productKey = productSelect.value;
+    const productKey =
+        productSelect.value;
 
     const saleInput =
         position.querySelector(".position-sale");
@@ -462,10 +515,15 @@ function updateDiploma(productSelect) {
 
     if (!saleInput || !costInput) return;
 
-    const quantity = Number(quantityInput?.value || 1);
+    const quantity =
+        Number(quantityInput?.value || 1);
 
     if (category === "diploma") {
-        const price = getDiplomaPrice(productKey, quantity);
+        const price =
+            getDiplomaPrice(
+                productKey,
+                quantity
+            );
 
         saleInput.value = price.sale;
         costInput.value = price.cost;
@@ -473,7 +531,8 @@ function updateDiploma(productSelect) {
 
     if (category === "cup_ready") {
         const catalog = loadCatalog();
-        const cup = catalog.readyCups[productKey];
+        const cup =
+            catalog.readyCups[productKey];
 
         if (cup) {
             saleInput.value = cup.sale;
@@ -481,27 +540,13 @@ function updateDiploma(productSelect) {
         }
     }
 
-    if (category === "cup_print") {
-        saleInput.value = 0;
-        costInput.value = 0;
-    }
-
-    if (category === "cup_custom") {
-        saleInput.value = 0;
-        costInput.value = 0;
-    }
-
-    if (category === "packaging") {
-        saleInput.value = 0;
-        costInput.value = 0;
-    }
-
-    if (category === "designer") {
-        saleInput.value = 0;
-        costInput.value = 0;
-    }
-
-    if (category === "urgent") {
+    if (
+        category === "cup_print" ||
+        category === "cup_custom" ||
+        category === "packaging" ||
+        category === "designer" ||
+        category === "urgent"
+    ) {
         saleInput.value = 0;
         costInput.value = 0;
     }
@@ -515,7 +560,8 @@ function updateDiploma(productSelect) {
 function getDiplomaPrice(key, quantity) {
     const catalog = loadCatalog();
 
-    const diploma = catalog.diplomaPrices[key];
+    const diploma =
+        catalog.diplomaPrices[key];
 
     if (!diploma) {
         return {
@@ -524,13 +570,15 @@ function getDiplomaPrice(key, quantity) {
         };
     }
 
-    const tiers = Object.values(diploma.tiers);
+    const tiers =
+        Object.values(diploma.tiers);
 
     const tier =
         tiers.find(item =>
             quantity >= item.min &&
             quantity <= item.max
-        ) || tiers[tiers.length - 1];
+        ) ||
+        tiers[tiers.length - 1];
 
     return {
         sale: Number(tier.sale || 0),
@@ -542,36 +590,53 @@ function getDiplomaPrice(key, quantity) {
 // ---------- РАСЧЁТ ----------
 
 function calculatePosition(position) {
-    const quantityInput =
-        position.querySelector(".position-quantity");
-
-    const saleInput =
-        position.querySelector(".position-sale");
-
-    const costInput =
-        position.querySelector(".position-cost");
-
     const quantity =
-        Math.max(1, Number(quantityInput?.value || 1));
+        Math.max(
+            1,
+            Number(
+                position.querySelector(
+                    ".position-quantity"
+                )?.value || 1
+            )
+        );
 
     const sale =
-        Number(saleInput?.value || 0);
+        Number(
+            position.querySelector(
+                ".position-sale"
+            )?.value || 0
+        );
 
     const cost =
-        Number(costInput?.value || 0);
+        Number(
+            position.querySelector(
+                ".position-cost"
+            )?.value || 0
+        );
 
-    const saleTotal = sale * quantity;
-    const costTotal = cost * quantity;
-    const profitTotal = saleTotal - costTotal;
+    const saleTotal =
+        sale * quantity;
+
+    const costTotal =
+        cost * quantity;
+
+    const profitTotal =
+        saleTotal - costTotal;
 
     const saleEl =
-        position.querySelector(".position-sale-total");
+        position.querySelector(
+            ".position-sale-total"
+        );
 
     const costEl =
-        position.querySelector(".position-cost-total");
+        position.querySelector(
+            ".position-cost-total"
+        );
 
     const profitEl =
-        position.querySelector(".position-profit-total");
+        position.querySelector(
+            ".position-profit-total"
+        );
 
     if (saleEl) {
         saleEl.textContent =
@@ -588,9 +653,14 @@ function calculatePosition(position) {
             `${formatMoney(profitTotal)} грн`;
     }
 
-    position.dataset.sale = saleTotal;
-    position.dataset.cost = costTotal;
-    position.dataset.profit = profitTotal;
+    position.dataset.sale =
+        saleTotal;
+
+    position.dataset.cost =
+        costTotal;
+
+    position.dataset.profit =
+        profitTotal;
 
     return {
         quantity,
@@ -609,18 +679,27 @@ function calculateAll() {
     let totalProfit = 0;
 
     document
-        .querySelectorAll("#positions .position-card")
+        .querySelectorAll(
+            "#positions .position-card"
+        )
         .forEach(position => {
-            const result = calculatePosition(position);
+
+            const result =
+                calculatePosition(position);
 
             totalSale += result.saleTotal;
             totalCost += result.costTotal;
             totalProfit += result.profitTotal;
         });
 
-    const saleEl = document.getElementById("totalSale");
-    const costEl = document.getElementById("totalCost");
-    const profitEl = document.getElementById("totalProfit");
+    const saleEl =
+        document.getElementById("totalSale");
+
+    const costEl =
+        document.getElementById("totalCost");
+
+    const profitEl =
+        document.getElementById("totalProfit");
 
     if (saleEl) {
         saleEl.textContent =
@@ -648,7 +727,8 @@ function calculateAll() {
 // ---------- ОЧИСТКА НОВОГО ЗАКАЗА ----------
 
 function clearOrder() {
-    const client = document.getElementById("clientName");
+    const client =
+        document.getElementById("clientName");
 
     if (client) {
         client.value = "";
@@ -671,44 +751,55 @@ function clearOrder() {
 // ---------- НОМЕР ЗАКАЗА ----------
 
 function getNextOrderNumber() {
-    const orders = getOrders();
+    const orders =
+        getOrders();
 
     let maxNumber = 0;
 
     orders.forEach(order => {
-        const number = parseInt(
-            String(order.number || "").replace(/\D/g, ""),
-            10
-        );
+
+        const number =
+            parseInt(
+                String(
+                    order.number || ""
+                ).replace(/\D/g, ""),
+                10
+            );
 
         if (!isNaN(number)) {
-            maxNumber = Math.max(maxNumber, number);
+            maxNumber =
+                Math.max(
+                    maxNumber,
+                    number
+                );
         }
     });
 
-    return String(maxNumber + 1).padStart(4, "0");
+    return String(maxNumber + 1)
+        .padStart(4, "0");
 }
 
 
-// ---------- СОХРАНЕНИЕ ЗАКАЗА ----------
+// ---------- СОХРАНЕНИЕ НОВОГО ЗАКАЗА ----------
 
-function saveOrder() {
-    const clientInput =
-        document.getElementById("clientName");
-
-    const client =
-        clientInput?.value.trim() || "Без имени";
-
+function collectNewOrderPositions() {
     const positions = [];
 
     document
-        .querySelectorAll("#positions .position-card")
+        .querySelectorAll(
+            "#positions .position-card"
+        )
         .forEach(position => {
+
             const category =
-                position.querySelector(".position-category")?.value || "";
+                position.querySelector(
+                    ".position-category"
+                )?.value || "";
 
             const product =
-                position.querySelector(".position-product")?.value || "";
+                position.querySelector(
+                    ".position-product"
+                )?.value || "";
 
             if (!category || !product) {
                 return;
@@ -716,21 +807,29 @@ function saveOrder() {
 
             const quantity =
                 Number(
-                    position.querySelector(".position-quantity")?.value || 1
+                    position.querySelector(
+                        ".position-quantity"
+                    )?.value || 1
                 );
 
             const sale =
                 Number(
-                    position.querySelector(".position-sale")?.value || 0
+                    position.querySelector(
+                        ".position-sale"
+                    )?.value || 0
                 );
 
             const cost =
                 Number(
-                    position.querySelector(".position-cost")?.value || 0
+                    position.querySelector(
+                        ".position-cost"
+                    )?.value || 0
                 );
 
             const description =
-                position.querySelector(".position-description")?.value || "";
+                position.querySelector(
+                    ".position-description"
+                )?.value || "";
 
             positions.push({
                 category,
@@ -739,52 +838,93 @@ function saveOrder() {
                 quantity,
                 sale,
                 cost,
-                saleTotal: sale * quantity,
-                costTotal: cost * quantity,
-                profitTotal: (sale - cost) * quantity
+                saleTotal:
+                    sale * quantity,
+                costTotal:
+                    cost * quantity,
+                profitTotal:
+                    (sale - cost) * quantity
             });
         });
 
+    return positions;
+}
+
+
+function saveOrder() {
+    const client =
+        document.getElementById(
+            "clientName"
+        )?.value.trim() ||
+        "Без имени";
+
+    const positions =
+        collectNewOrderPositions();
+
     if (!positions.length) {
-        alert("Добавьте хотя бы одну позицию.");
+        alert(
+            "Добавьте хотя бы одну позицию."
+        );
         return;
     }
 
-    const totals = calculateAll();
+    const totals =
+        calculateAll();
 
     const order = {
         id: Date.now(),
 
-        number: getNextOrderNumber(),
+        number:
+            getNextOrderNumber(),
 
         client,
 
-        createdAt: Date.now(),
+        createdAt:
+            Date.now(),
 
-        status: "Новый",
+        status:
+            "Новый",
+
+        paymentStatus:
+            "Не оплачено",
+
+        comment:
+            "",
+
+        photos:
+            [],
 
         positions,
 
-        saleTotal: totals.sale,
-        costTotal: totals.cost,
-        profitTotal: totals.profit,
+        saleTotal:
+            totals.sale,
 
-        // Совместимость со старым форматом
-        sale: `${formatMoney(totals.sale)} грн`,
-        cost: `${formatMoney(totals.cost)} грн`,
-        profit: `${formatMoney(totals.profit)} грн`
+        costTotal:
+            totals.cost,
+
+        profitTotal:
+            totals.profit,
+
+        sale:
+            `${formatMoney(totals.sale)} грн`,
+
+        cost:
+            `${formatMoney(totals.cost)} грн`,
+
+        profit:
+            `${formatMoney(totals.profit)} грн`
     };
 
-    const orders = getOrders();
+    const orders =
+        getOrders();
 
     orders.push(order);
 
-    localStorage.setItem(
-        "printAppOrders",
-        JSON.stringify(orders)
-    );
+    saveOrders(orders);
 
-    alert(`Заказ №${order.number} сохранён.`);
+    alert(
+        `Заказ №${order.number} сохранён.`
+    );
 
     clearOrder();
 
@@ -792,28 +932,44 @@ function saveOrder() {
 }
 
 
-// ---------- ПОЛУЧЕНИЕ ЗАКАЗОВ ----------
+// ---------- ЗАКАЗЫ В LOCALSTORAGE ----------
 
 function getOrders() {
     try {
         const saved =
-            localStorage.getItem("printAppOrders");
+            localStorage.getItem(
+                "printAppOrders"
+            );
 
         if (!saved) {
             return [];
         }
 
-        const orders = JSON.parse(saved);
+        const orders =
+            JSON.parse(saved);
 
         if (!Array.isArray(orders)) {
             return [];
         }
 
         return orders;
+
     } catch (error) {
-        console.error("Ошибка загрузки заказов:", error);
+        console.error(
+            "Ошибка загрузки заказов:",
+            error
+        );
+
         return [];
     }
+}
+
+
+function saveOrders(orders) {
+    localStorage.setItem(
+        "printAppOrders",
+        JSON.stringify(orders)
+    );
 }
 
 
@@ -830,19 +986,31 @@ function categoryNames(category) {
         urgent: "Срочность"
     };
 
-    return names[category] || category;
+    return (
+        names[category] ||
+        category
+    );
 }
 
 
 function catalogNames(category, key) {
-    const catalog = loadCatalog();
+    const catalog =
+        loadCatalog();
 
     if (category === "diploma") {
-        return catalog.diplomaPrices[key]?.name || key;
+        return (
+            catalog.diplomaPrices[key]
+                ?.name ||
+            key
+        );
     }
 
     if (category === "cup_ready") {
-        return catalog.readyCups[key]?.name || key;
+        return (
+            catalog.readyCups[key]
+                ?.name ||
+            key
+        );
     }
 
     const names = {
@@ -853,11 +1021,16 @@ function catalogNames(category, key) {
         urgent: "Срочность"
     };
 
-    return names[category] || key;
+    return (
+        names[category] ||
+        key
+    );
 }
 
 
-// ---------- ЗАКАЗЫ ----------
+// =====================================================
+// ЗАКАЗЫ
+// =====================================================
 
 let ordersSearch = "";
 let ordersStatusFilter = "all";
@@ -868,20 +1041,33 @@ function showOrders() {
     hideAllScreens();
 
     const screen =
-        document.getElementById("screenOrders");
+        document.getElementById(
+            "screenOrders"
+        );
 
     if (!screen) return;
 
     screen.classList.add("active");
 
     const title =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const subtitle =
-        document.getElementById("pageSubtitle");
+        document.getElementById(
+            "pageSubtitle"
+        );
 
-    if (title) title.textContent = "Заказы";
-    if (subtitle) subtitle.textContent = "Список сохранённых заказов";
+    if (title) {
+        title.textContent =
+            "Заказы";
+    }
+
+    if (subtitle) {
+        subtitle.textContent =
+            "Список сохранённых заказов";
+    }
 
     renderOrders();
 
@@ -894,59 +1080,300 @@ function openOrders() {
 }
 
 
+// ---------- ОТДЕЛЬНОЕ ПОЛЕ ПОИСКА ----------
+// Важно: само поле НЕ пересоздаётся
+// при каждом вводе символа.
+
 function renderOrders() {
     const container =
-        document.getElementById("ordersList");
+        document.getElementById(
+            "ordersList"
+        );
 
     const count =
-        document.getElementById("ordersCount");
+        document.getElementById(
+            "ordersCount"
+        );
 
     if (!container) return;
 
-    let orders = getOrders();
+    addOrdersStyles();
 
-    // Поиск
-    if (ordersSearch) {
-        const search =
-            ordersSearch.toLowerCase();
+    let controls =
+        container.querySelector(
+            ".orders-controls"
+        );
 
-        orders = orders.filter(order => {
-            const number =
-                String(order.number || "");
+    let list =
+        container.querySelector(
+            ".orders-list-results"
+        );
 
-            const client =
-                String(order.client || "");
+    if (!controls) {
+        controls =
+            document.createElement("div");
 
-            return (
-                number.toLowerCase().includes(search) ||
-                client.toLowerCase().includes(search)
+        controls.className =
+            "orders-controls";
+
+        controls.innerHTML = `
+            <input
+                type="search"
+                id="ordersSearchInput"
+                placeholder="Поиск по номеру или клиенту"
+                autocomplete="off"
+                enterkeyhint="search"
+            >
+
+            <select
+                id="ordersStatusFilter"
+            >
+                <option value="all">
+                    Все статусы
+                </option>
+
+                <option value="Новый">
+                    Новый
+                </option>
+
+                <option value="В работе">
+                    В работе
+                </option>
+
+                <option value="Готов">
+                    Готов
+                </option>
+
+                <option value="Выдан">
+                    Выдан
+                </option>
+
+                <option value="Отменён">
+                    Отменён
+                </option>
+            </select>
+
+            <select
+                id="ordersSort"
+            >
+                <option value="newest">
+                    Сначала новые
+                </option>
+
+                <option value="oldest">
+                    Сначала старые
+                </option>
+
+                <option value="profit">
+                    По прибыли
+                </option>
+
+                <option value="sale">
+                    По сумме
+                </option>
+            </select>
+        `;
+
+        container.innerHTML = "";
+
+        container.appendChild(
+            controls
+        );
+
+        list =
+            document.createElement("div");
+
+        list.className =
+            "orders-list-results";
+
+        container.appendChild(list);
+
+        const searchInput =
+            controls.querySelector(
+                "#ordersSearchInput"
             );
-        });
+
+        const statusSelect =
+            controls.querySelector(
+                "#ordersStatusFilter"
+            );
+
+        const sortSelect =
+            controls.querySelector(
+                "#ordersSort"
+            );
+
+        // Ключевой момент:
+        // input НЕ пересоздаётся.
+        searchInput.addEventListener(
+            "input",
+            function () {
+                ordersSearch =
+                    this.value;
+
+                renderOrderCards();
+            }
+        );
+
+        statusSelect.addEventListener(
+            "change",
+            function () {
+                ordersStatusFilter =
+                    this.value;
+
+                renderOrderCards();
+            }
+        );
+
+        sortSelect.addEventListener(
+            "change",
+            function () {
+                ordersSort =
+                    this.value;
+
+                renderOrderCards();
+            }
+        );
     }
 
-    // Фильтр статуса
-    if (ordersStatusFilter !== "all") {
-        orders = orders.filter(order =>
-            getOrderStatus(order) === ordersStatusFilter
+    const searchInput =
+        controls.querySelector(
+            "#ordersSearchInput"
         );
+
+    const statusSelect =
+        controls.querySelector(
+            "#ordersStatusFilter"
+        );
+
+    const sortSelect =
+        controls.querySelector(
+            "#ordersSort"
+        );
+
+    if (
+        document.activeElement !==
+        searchInput
+    ) {
+        searchInput.value =
+            ordersSearch;
+    }
+
+    statusSelect.value =
+        ordersStatusFilter;
+
+    sortSelect.value =
+        ordersSort;
+
+    renderOrderCards();
+}
+
+
+function renderOrderCards() {
+    const container =
+        document.getElementById(
+            "ordersList"
+        );
+
+    if (!container) return;
+
+    const list =
+        container.querySelector(
+            ".orders-list-results"
+        );
+
+    const count =
+        document.getElementById(
+            "ordersCount"
+        );
+
+    if (!list) return;
+
+    let orders =
+        getOrders();
+
+    // Поиск
+    const search =
+        String(
+            ordersSearch || ""
+        )
+        .trim()
+        .toLowerCase();
+
+    if (search) {
+        orders =
+            orders.filter(order => {
+
+                const number =
+                    String(
+                        order.number || ""
+                    ).toLowerCase();
+
+                const client =
+                    String(
+                        order.client || ""
+                    ).toLowerCase();
+
+                return (
+                    number.includes(search) ||
+                    client.includes(search)
+                );
+            });
+    }
+
+    // Статус
+    if (
+        ordersStatusFilter !==
+        "all"
+    ) {
+        orders =
+            orders.filter(order =>
+                getOrderStatus(order) ===
+                ordersStatusFilter
+            );
     }
 
     // Сортировка
     orders.sort((a, b) => {
-        if (ordersSort === "newest") {
-            return getOrderDate(b) - getOrderDate(a);
+
+        if (
+            ordersSort ===
+            "newest"
+        ) {
+            return (
+                getOrderDate(b) -
+                getOrderDate(a)
+            );
         }
 
-        if (ordersSort === "oldest") {
-            return getOrderDate(a) - getOrderDate(b);
+        if (
+            ordersSort ===
+            "oldest"
+        ) {
+            return (
+                getOrderDate(a) -
+                getOrderDate(b)
+            );
         }
 
-        if (ordersSort === "profit") {
-            return getOrderProfit(b) - getOrderProfit(a);
+        if (
+            ordersSort ===
+            "profit"
+        ) {
+            return (
+                getOrderProfit(b) -
+                getOrderProfit(a)
+            );
         }
 
-        if (ordersSort === "sale") {
-            return getOrderSale(b) - getOrderSale(a);
+        if (
+            ordersSort ===
+            "sale"
+        ) {
+            return (
+                getOrderSale(b) -
+                getOrderSale(a)
+            );
         }
 
         return 0;
@@ -957,117 +1384,62 @@ function renderOrders() {
             `Всего заказов: ${orders.length}`;
     }
 
-    let html = `
-        <div class="orders-controls">
-
-            <input
-                type="search"
-                placeholder="Поиск по номеру или клиенту"
-                value="${escapeHtml(ordersSearch)}"
-                oninput="ordersSearch=this.value; renderOrders()"
-            >
-
-            <select
-                onchange="ordersStatusFilter=this.value; renderOrders()"
-            >
-                <option value="all"
-                    ${ordersStatusFilter === "all" ? "selected" : ""}>
-                    Все статусы
-                </option>
-
-                <option value="Новый"
-                    ${ordersStatusFilter === "Новый" ? "selected" : ""}>
-                    Новый
-                </option>
-
-                <option value="В работе"
-                    ${ordersStatusFilter === "В работе" ? "selected" : ""}>
-                    В работе
-                </option>
-
-                <option value="Готов"
-                    ${ordersStatusFilter === "Готов" ? "selected" : ""}>
-                    Готов
-                </option>
-
-                <option value="Выдан"
-                    ${ordersStatusFilter === "Выдан" ? "selected" : ""}>
-                    Выдан
-                </option>
-
-                <option value="Отменён"
-                    ${ordersStatusFilter === "Отменён" ? "selected" : ""}>
-                    Отменён
-                </option>
-            </select>
-
-            <select
-                onchange="ordersSort=this.value; renderOrders()"
-            >
-                <option value="newest"
-                    ${ordersSort === "newest" ? "selected" : ""}>
-                    Сначала новые
-                </option>
-
-                <option value="oldest"
-                    ${ordersSort === "oldest" ? "selected" : ""}>
-                    Сначала старые
-                </option>
-
-                <option value="profit"
-                    ${ordersSort === "profit" ? "selected" : ""}>
-                    По прибыли
-                </option>
-
-                <option value="sale"
-                    ${ordersSort === "sale" ? "selected" : ""}>
-                    По сумме
-                </option>
-            </select>
-
-        </div>
-    `;
-
     if (!orders.length) {
-        html += `
+        list.innerHTML = `
             <div class="empty-orders">
-                <div style="font-size:42px;">📋</div>
+                <div style="font-size:42px;">
+                    📋
+                </div>
 
-                <h3>Заказов пока нет</h3>
+                <h3>
+                    ${
+                        search ||
+                        ordersStatusFilter !== "all"
+                            ? "Ничего не найдено"
+                            : "Заказов пока нет"
+                    }
+                </h3>
 
                 <p>
-                    Сохранённые заказы появятся здесь.
+                    ${
+                        search
+                            ? "Попробуйте изменить запрос."
+                            : "Сохранённые заказы появятся здесь."
+                    }
                 </p>
             </div>
         `;
 
-        container.innerHTML = html;
         return;
     }
 
-    html += `<div class="orders-list-inner">`;
+    let html = "";
 
     orders.forEach(order => {
+
         const number =
             order.number || "—";
 
         const client =
-            order.client || "Без имени";
+            order.client ||
+            "Без имени";
 
         const status =
             getOrderStatus(order);
 
+        const payment =
+            getPaymentStatus(order);
+
         const sale =
             getOrderSale(order);
-
-        const cost =
-            getOrderCost(order);
 
         const profit =
             getOrderProfit(order);
 
         const date =
-            formatDate(getOrderDate(order));
+            formatDate(
+                getOrderDate(order)
+            );
 
         html += `
             <div class="order-card">
@@ -1078,6 +1450,7 @@ function renderOrders() {
                 >
 
                     <div class="order-card-top">
+
                         <strong>
                             Заказ №${escapeHtml(number)}
                         </strong>
@@ -1085,6 +1458,7 @@ function renderOrders() {
                         <span class="order-status">
                             ${escapeHtml(status)}
                         </span>
+
                     </div>
 
                     <div class="order-client">
@@ -1095,16 +1469,29 @@ function renderOrders() {
                         ${date}
                     </div>
 
+                    <div class="order-payment">
+                        Оплата:
+                        <b>
+                            ${escapeHtml(payment)}
+                        </b>
+                    </div>
+
                     <div class="order-money">
+
                         <span>
                             Продажа:
-                            <b>${formatMoney(sale)} грн</b>
+                            <b>
+                                ${formatMoney(sale)} грн
+                            </b>
                         </span>
 
                         <span>
                             Прибыль:
-                            <b>${formatMoney(profit)} грн</b>
+                            <b>
+                                ${formatMoney(profit)} грн
+                            </b>
                         </span>
+
                     </div>
 
                 </div>
@@ -1112,14 +1499,24 @@ function renderOrders() {
                 <div class="order-card-actions">
 
                     <select
-                        onchange="changeOrderStatus(${Number(order.id)}, this.value)"
+                        onclick="event.stopPropagation()"
+                        onchange="
+                            event.stopPropagation();
+                            changeOrderStatus(
+                                ${Number(order.id)},
+                                this.value
+                            )
+                        "
                     >
                         ${getStatusOptions(status)}
                     </select>
 
                     <button
                         type="button"
-                        onclick="deleteOrder(${Number(order.id)})"
+                        onclick="
+                            event.stopPropagation();
+                            deleteOrder(${Number(order.id)})
+                        "
                     >
                         Удалить
                     </button>
@@ -1130,34 +1527,59 @@ function renderOrders() {
         `;
     });
 
-    html += `</div>`;
-
-    container.innerHTML = html;
+    list.innerHTML = html;
 }
 
 
 function getStatusOptions(current) {
-    const statuses = [
-        "Новый",
-        "В работе",
-        "Готов",
-        "Выдан",
-        "Отменён"
-    ];
+    return ORDER_STATUSES
+        .map(status => `
+            <option
+                value="${escapeHtml(status)}"
+                ${
+                    status === current
+                        ? "selected"
+                        : ""
+                }
+            >
+                ${escapeHtml(status)}
+            </option>
+        `)
+        .join("");
+}
 
-    return statuses.map(status => `
-        <option
-            value="${escapeHtml(status)}"
-            ${status === current ? "selected" : ""}
-        >
-            ${escapeHtml(status)}
-        </option>
-    `).join("");
+
+function getPaymentOptions(current) {
+    return PAYMENT_STATUSES
+        .map(status => `
+            <option
+                value="${escapeHtml(status)}"
+                ${
+                    status === current
+                        ? "selected"
+                        : ""
+                }
+            >
+                ${escapeHtml(status)}
+            </option>
+        `)
+        .join("");
 }
 
 
 function getOrderStatus(order) {
-    return order.status || "Новый";
+    return (
+        order.status ||
+        "Новый"
+    );
+}
+
+
+function getPaymentStatus(order) {
+    return (
+        order.paymentStatus ||
+        "Не оплачено"
+    );
 }
 
 
@@ -1171,151 +1593,346 @@ function getOrderDate(order) {
 
 
 function getOrderSale(order) {
-    if (typeof order.saleTotal === "number") {
+    if (
+        typeof order.saleTotal ===
+        "number"
+    ) {
         return order.saleTotal;
     }
 
-    return parseMoney(order.sale);
+    return parseMoney(
+        order.sale
+    );
 }
 
 
 function getOrderCost(order) {
-    if (typeof order.costTotal === "number") {
+    if (
+        typeof order.costTotal ===
+        "number"
+    ) {
         return order.costTotal;
     }
 
-    return parseMoney(order.cost);
+    return parseMoney(
+        order.cost
+    );
 }
 
 
 function getOrderProfit(order) {
-    if (typeof order.profitTotal === "number") {
+    if (
+        typeof order.profitTotal ===
+        "number"
+    ) {
         return order.profitTotal;
     }
 
-    return parseMoney(order.profit);
+    return parseMoney(
+        order.profit
+    );
 }
 
 
-function changeOrderStatus(id, status) {
-    const orders = getOrders();
+function changeOrderStatus(
+    id,
+    status
+) {
+    const orders =
+        getOrders();
 
     const order =
         orders.find(item =>
-            Number(item.id) === Number(id)
+            Number(item.id) ===
+            Number(id)
         );
 
     if (!order) return;
 
-    order.status = status;
+    order.status =
+        status;
 
-    localStorage.setItem(
-        "printAppOrders",
-        JSON.stringify(orders)
+    saveOrders(orders);
+
+    renderOrderCards();
+}
+
+
+// ---------- ОТКРЫТИЕ ЗАКАЗА ----------
+
+function openOrderDetails(id) {
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) {
+        alert(
+            "Заказ не найден."
+        );
+        return;
+    }
+
+    // Миграция старых заказов
+    if (!order.paymentStatus) {
+        order.paymentStatus =
+            "Не оплачено";
+    }
+
+    if (!Array.isArray(order.photos)) {
+        order.photos = [];
+    }
+
+    if (order.comment == null) {
+        order.comment = "";
+    }
+
+    saveOrders(orders);
+
+    ensureOrderModal();
+
+    renderOrderDetails(
+        order
     );
 
-    renderOrders();
+    const modal =
+        document.getElementById(
+            "orderModal"
+        );
+
+    modal.classList.add(
+        "active"
+    );
+}
+
+
+function ensureOrderModal() {
+    let modal =
+        document.getElementById(
+            "orderModal"
+        );
+
+    if (!modal) {
+        createOrderModal();
+        return;
+    }
+
+    if (
+        !modal.querySelector(
+            ".order-modal-content"
+        )
+    ) {
+        modal.innerHTML = `
+            <div
+                class="modal-overlay"
+                onclick="closeOrderDetails()"
+            ></div>
+
+            <div class="order-modal-content"></div>
+        `;
+    }
+
+    addModalStyles();
+}
+
+
+function createOrderModal() {
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.id =
+        "orderModal";
+
+    modal.className =
+        "modal";
+
+    modal.innerHTML = `
+        <div
+            class="modal-overlay"
+            onclick="closeOrderDetails()"
+        ></div>
+
+        <div class="order-modal-content"></div>
+    `;
+
+    document.body.appendChild(
+        modal
+    );
+
+    addModalStyles();
 }
 
 
 // ---------- ПРОСМОТР ЗАКАЗА ----------
 
-function openOrderDetails(id) {
-    const orders = getOrders();
-
-    const order =
-        orders.find(item =>
-            Number(item.id) === Number(id)
+function renderOrderDetails(order) {
+    const modal =
+        document.getElementById(
+            "orderModal"
         );
 
-    if (!order) {
-        alert("Заказ не найден.");
-        return;
-    }
-
-    const modal =
-        document.getElementById("orderModal");
-
-    if (!modal) {
-        // Если modal отсутствует в index.html,
-        // создаём его автоматически.
-        createOrderModal();
-    }
-
-    const actualModal =
-        document.getElementById("orderModal");
+    if (!modal) return;
 
     const content =
-        actualModal.querySelector(".order-modal-content");
+        modal.querySelector(
+            ".order-modal-content"
+        );
 
-    const positions = order.positions || [];
+    if (!content) return;
+
+    const positions =
+        order.positions || [];
 
     let positionsHtml = "";
 
-    positions.forEach((position, index) => {
-        const productName =
-            catalogNames(
-                position.category,
-                position.product
-            );
+    positions.forEach(
+        (position, index) => {
 
-        const description =
-            position.description
-                ? `<div>${escapeHtml(position.description)}</div>`
-                : "";
+            const productName =
+                catalogNames(
+                    position.category,
+                    position.product
+                );
 
-        positionsHtml += `
-            <div class="order-detail-position">
+            const description =
+                position.description
+                    ? `
+                        <div class="detail-description">
+                            ${escapeHtml(
+                                position.description
+                            )}
+                        </div>
+                    `
+                    : "";
 
-                <strong>
-                    ${index + 1}. ${escapeHtml(productName)}
-                </strong>
+            positionsHtml += `
+                <div
+                    class="order-detail-position"
+                >
 
-                ${description}
+                    <strong>
+                        ${index + 1}.
+                        ${escapeHtml(productName)}
+                    </strong>
 
-                <div>
-                    ${position.quantity} шт. ×
-                    ${formatMoney(position.sale)} грн
+                    ${description}
+
+                    <div>
+                        ${position.quantity} шт.
+                        ×
+                        ${formatMoney(position.sale)}
+                        грн
+                    </div>
+
+                    <div>
+                        Себестоимость:
+                        ${formatMoney(position.cost)}
+                        грн / шт.
+                    </div>
+
+                    <div>
+                        Сумма:
+                        ${formatMoney(
+                            position.saleTotal
+                        )}
+                        грн
+                    </div>
+
+                    <div>
+                        Прибыль:
+                        ${formatMoney(
+                            position.profitTotal
+                        )}
+                        грн
+                    </div>
+
                 </div>
+            `;
+        }
+    );
 
-                <div>
-                    Себестоимость:
-                    ${formatMoney(position.cost)} грн / шт.
-                </div>
+    const photos =
+        Array.isArray(order.photos)
+            ? order.photos
+            : [];
 
-                <div>
-                    Сумма:
-                    ${formatMoney(position.saleTotal)} грн
-                </div>
+    let photosHtml = "";
 
-                <div>
-                    Прибыль:
-                    ${formatMoney(position.profitTotal)} грн
-                </div>
+    if (photos.length) {
+        photosHtml = `
+            <div class="order-photos-grid">
+
+                ${photos.map(
+                    (photo, index) => `
+                        <div
+                            class="order-photo-item"
+                        >
+
+                            <img
+                                src="${photo}"
+                                alt="Фото заказа"
+                            >
+
+                            <button
+                                type="button"
+                                onclick="
+                                    removeOrderPhoto(
+                                        ${Number(order.id)},
+                                        ${index}
+                                    )
+                                "
+                            >
+                                ×
+                            </button>
+
+                        </div>
+                    `
+                ).join("")}
 
             </div>
         `;
-    });
+    } else {
+        photosHtml = `
+            <div class="no-photos">
+                Фото пока нет.
+            </div>
+        `;
+    }
 
     content.innerHTML = `
+
         <div class="order-detail-header">
 
             <div>
                 <h2>
-                    Заказ №${escapeHtml(order.number || "—")}
+                    Заказ №${escapeHtml(
+                        order.number || "—"
+                    )}
                 </h2>
 
-                <div>
-                    ${escapeHtml(order.client || "Без имени")}
+                <div class="detail-client">
+                    ${escapeHtml(
+                        order.client ||
+                        "Без имени"
+                    )}
                 </div>
 
                 <small>
-                    ${formatDate(getOrderDate(order))}
+                    ${formatDate(
+                        getOrderDate(order)
+                    )}
                 </small>
             </div>
 
             <button
                 type="button"
+                class="modal-close-button"
                 onclick="closeOrderDetails()"
             >
                 ×
@@ -1323,96 +1940,1473 @@ function openOrderDetails(id) {
 
         </div>
 
-        <div class="order-detail-status">
 
-            <label>Статус</label>
+        <div class="order-detail-block">
+
+            <label>
+                Статус заказа
+            </label>
 
             <select
-                onchange="changeOrderStatusFromModal(
-                    ${Number(order.id)},
-                    this.value
-                )"
+                onchange="
+                    changeOrderStatusFromModal(
+                        ${Number(order.id)},
+                        this.value
+                    )
+                "
             >
-                ${getStatusOptions(getOrderStatus(order))}
+                ${getStatusOptions(
+                    getOrderStatus(order)
+                )}
             </select>
 
         </div>
 
-        <div class="order-detail-positions">
-            ${positionsHtml}
+
+        <div class="order-detail-block">
+
+            <label>
+                Статус оплаты
+            </label>
+
+            <select
+                onchange="
+                    changePaymentStatus(
+                        ${Number(order.id)},
+                        this.value
+                    )
+                "
+            >
+                ${getPaymentOptions(
+                    getPaymentStatus(order)
+                )}
+            </select>
+
         </div>
+
+
+        <div class="order-detail-block">
+
+            <div class="detail-section-title">
+                Позиции
+            </div>
+
+            <div>
+                ${positionsHtml}
+            </div>
+
+        </div>
+
 
         <div class="order-detail-total">
 
             <div>
                 Продажа:
                 <strong>
-                    ${formatMoney(getOrderSale(order))} грн
+                    ${formatMoney(
+                        getOrderSale(order)
+                    )}
+                    грн
                 </strong>
             </div>
 
             <div>
                 Себестоимость:
                 <strong>
-                    ${formatMoney(getOrderCost(order))} грн
+                    ${formatMoney(
+                        getOrderCost(order)
+                    )}
+                    грн
                 </strong>
             </div>
 
             <div>
                 Прибыль:
                 <strong>
-                    ${formatMoney(getOrderProfit(order))} грн
+                    ${formatMoney(
+                        getOrderProfit(order)
+                    )}
+                    грн
                 </strong>
             </div>
 
         </div>
 
+
+        <div class="order-detail-block">
+
+            <div class="detail-section-title">
+                Комментарий
+            </div>
+
+            <textarea
+                id="orderCommentInput"
+                class="order-comment-input"
+                placeholder="Напишите комментарий к заказу..."
+            >${escapeHtml(
+                order.comment || ""
+            )}</textarea>
+
+            <button
+                type="button"
+                class="secondary-button order-save-comment"
+                onclick="
+                    saveOrderComment(
+                        ${Number(order.id)}
+                    )
+                "
+            >
+                Сохранить комментарий
+            </button>
+
+        </div>
+
+
+        <div class="order-detail-block">
+
+            <div class="detail-section-title">
+                Фото заказа
+            </div>
+
+            <label class="photo-add-button">
+                ＋ Добавить фото
+
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onchange="
+                        addOrderPhotos(
+                            ${Number(order.id)},
+                            this.files
+                        )
+                    "
+                    hidden
+                >
+            </label>
+
+            ${photosHtml}
+
+        </div>
+
+
+        <div class="order-detail-buttons">
+
+            <button
+                type="button"
+                class="primary-button"
+                onclick="
+                    openOrderEditor(
+                        ${Number(order.id)}
+                    )
+                "
+            >
+                ✏️ Изменить заказ
+            </button>
+
+            <button
+                type="button"
+                class="danger-button"
+                onclick="
+                    deleteOrder(
+                        ${Number(order.id)}
+                    );
+                    closeOrderDetails();
+                "
+            >
+                Удалить заказ
+            </button>
+
+        </div>
+    `;
+}
+
+
+// ---------- СТАТУС ОПЛАТЫ ----------
+
+function changePaymentStatus(
+    id,
+    paymentStatus
+) {
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    order.paymentStatus =
+        paymentStatus;
+
+    saveOrders(orders);
+
+    renderOrderDetails(
+        order
+    );
+
+    renderOrderCards();
+}
+
+
+// ---------- СТАТУС ИЗ МОДАЛЬНОГО ОКНА ----------
+
+function changeOrderStatusFromModal(
+    id,
+    status
+) {
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    order.status =
+        status;
+
+    saveOrders(orders);
+
+    renderOrderDetails(
+        order
+    );
+
+    renderOrderCards();
+}
+
+
+// ---------- КОММЕНТАРИЙ ----------
+
+function saveOrderComment(id) {
+    const input =
+        document.getElementById(
+            "orderCommentInput"
+        );
+
+    if (!input) return;
+
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    order.comment =
+        input.value;
+
+    saveOrders(orders);
+
+    const button =
+        document.querySelector(
+            ".order-save-comment"
+        );
+
+    if (button) {
+        const oldText =
+            button.textContent;
+
+        button.textContent =
+            "✓ Сохранено";
+
+        setTimeout(() => {
+            if (button) {
+                button.textContent =
+                    oldText;
+            }
+        }, 1200);
+    }
+}
+
+
+// =====================================================
+// ФОТО
+// =====================================================
+
+async function addOrderPhotos(
+    id,
+    files
+) {
+    if (!files || !files.length) {
+        return;
+    }
+
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    if (!Array.isArray(order.photos)) {
+        order.photos = [];
+    }
+
+    const fileArray =
+        Array.from(files);
+
+    try {
+
+        for (const file of fileArray) {
+
+            const dataUrl =
+                await resizeImageToDataUrl(
+                    file,
+                    1400,
+                    0.82
+                );
+
+            order.photos.push(
+                dataUrl
+            );
+        }
+
+        saveOrders(orders);
+
+        renderOrderDetails(
+            order
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Ошибка добавления фото:",
+            error
+        );
+
+        alert(
+            "Не удалось добавить фото."
+        );
+    }
+}
+
+
+function resizeImageToDataUrl(
+    file,
+    maxSize = 1400,
+    quality = 0.82
+) {
+    return new Promise(
+        (resolve, reject) => {
+
+            const reader =
+                new FileReader();
+
+            reader.onload = event => {
+
+                const image =
+                    new Image();
+
+                image.onload = () => {
+
+                    let width =
+                        image.width;
+
+                    let height =
+                        image.height;
+
+                    if (
+                        width > maxSize ||
+                        height > maxSize
+                    ) {
+                        const ratio =
+                            Math.min(
+                                maxSize / width,
+                                maxSize / height
+                            );
+
+                        width =
+                            Math.round(
+                                width * ratio
+                            );
+
+                        height =
+                            Math.round(
+                                height * ratio
+                            );
+                    }
+
+                    const canvas =
+                        document.createElement(
+                            "canvas"
+                        );
+
+                    canvas.width =
+                        width;
+
+                    canvas.height =
+                        height;
+
+                    const ctx =
+                        canvas.getContext(
+                            "2d"
+                        );
+
+                    ctx.drawImage(
+                        image,
+                        0,
+                        0,
+                        width,
+                        height
+                    );
+
+                    resolve(
+                        canvas.toDataURL(
+                            "image/jpeg",
+                            quality
+                        )
+                    );
+                };
+
+                image.onerror =
+                    reject;
+
+                image.src =
+                    event.target.result;
+            };
+
+            reader.onerror =
+                reject;
+
+            reader.readAsDataURL(
+                file
+            );
+        }
+    );
+}
+
+
+function removeOrderPhoto(
+    id,
+    index
+) {
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    if (!Array.isArray(order.photos)) {
+        return;
+    }
+
+    if (
+        !confirm(
+            "Удалить это фото?"
+        )
+    ) {
+        return;
+    }
+
+    order.photos.splice(
+        index,
+        1
+    );
+
+    saveOrders(orders);
+
+    renderOrderDetails(
+        order
+    );
+}
+
+
+// =====================================================
+// РЕДАКТИРОВАНИЕ ЗАКАЗА
+// =====================================================
+
+function openOrderEditor(id) {
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    ensureOrderModal();
+
+    renderOrderEditor(
+        order
+    );
+}
+
+
+function renderOrderEditor(order) {
+    const modal =
+        document.getElementById(
+            "orderModal"
+        );
+
+    const content =
+        modal?.querySelector(
+            ".order-modal-content"
+        );
+
+    if (!content) return;
+
+    let positionsHtml = "";
+
+    (order.positions || [])
+        .forEach(
+            (position, index) => {
+
+                positionsHtml +=
+                    createEditPositionHtml(
+                        position,
+                        index
+                    );
+            }
+        );
+
+    content.innerHTML = `
+
+        <div class="order-detail-header">
+
+            <div>
+                <h2>
+                    Изменение заказа №${escapeHtml(
+                        order.number || "—"
+                    )}
+                </h2>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-button"
+                onclick="
+                    openOrderDetails(
+                        ${Number(order.id)}
+                    )
+                "
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="order-detail-block">
+
+            <label>
+                Клиент
+            </label>
+
+            <input
+                id="editOrderClient"
+                type="text"
+                value="${escapeHtml(
+                    order.client || ""
+                )}"
+                placeholder="Имя клиента"
+            >
+
+        </div>
+
+
+        <div
+            id="editOrderPositions"
+            class="edit-order-positions"
+        >
+            ${positionsHtml}
+        </div>
+
+
         <button
             type="button"
-            class="danger-button"
-            onclick="deleteOrder(${Number(order.id)}); closeOrderDetails();"
+            class="secondary-button"
+            onclick="addEditOrderPosition()"
         >
-            Удалить заказ
+            ＋ Добавить позицию
         </button>
+
+
+        <div class="edit-order-actions">
+
+            <button
+                type="button"
+                class="primary-button"
+                onclick="
+                    saveEditedOrder(
+                        ${Number(order.id)}
+                    )
+                "
+            >
+                Сохранить изменения
+            </button>
+
+            <button
+                type="button"
+                class="secondary-button"
+                onclick="
+                    openOrderDetails(
+                        ${Number(order.id)}
+                    )
+                "
+            >
+                Отмена
+            </button>
+
+        </div>
     `;
 
-    actualModal.classList.add("active");
+    modal.classList.add(
+        "active"
+    );
 }
 
 
-function changeOrderStatusFromModal(id, status) {
-    changeOrderStatus(id, status);
+function createEditPositionHtml(
+    position = {},
+    index = 0
+) {
+    const category =
+        position.category || "";
 
-    openOrderDetails(id);
-}
+    const product =
+        position.product || "";
+
+    const quantity =
+        Number(
+            position.quantity || 1
+        );
+
+    const sale =
+        Number(
+            position.sale || 0
+        );
+
+    const cost =
+        Number(
+            position.cost || 0
+        );
+
+    const description =
+        position.description || "";
+
+    return `
+        <div
+            class="edit-position-card"
+            data-edit-position
+        >
+
+            <div class="edit-position-header">
+
+                <strong>
+                    Позиция ${index + 1}
+                </strong>
+
+                <button
+                    type="button"
+                    onclick="removeEditPosition(this)"
+                >
+                    ×
+                </button>
+
+            </div>
 
 
-function createOrderModal() {
-    const modal = document.createElement("div");
+            <div class="field">
 
-    modal.id = "orderModal";
+                <label>
+                    Категория
+                </label>
 
-    modal.className = "modal";
+                <select
+                    class="edit-category"
+                    onchange="
+                        updateEditProductOptions(this)
+                    "
+                >
+                    <option value="">
+                        Выберите категорию
+                    </option>
 
-    modal.innerHTML = `
-        <div class="modal-overlay"
-             onclick="closeOrderDetails()"></div>
+                    <option
+                        value="diploma"
+                        ${
+                            category === "diploma"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Дипломы
+                    </option>
 
-        <div class="order-modal-content"></div>
+                    <option
+                        value="cup_ready"
+                        ${
+                            category === "cup_ready"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Готовая чашка
+                    </option>
+
+                    <option
+                        value="cup_print"
+                        ${
+                            category === "cup_print"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Печать чашка
+                    </option>
+
+                    <option
+                        value="cup_custom"
+                        ${
+                            category === "cup_custom"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Чашка
+                    </option>
+
+                    <option
+                        value="packaging"
+                        ${
+                            category === "packaging"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Упаковка для чашки
+                    </option>
+
+                    <option
+                        value="designer"
+                        ${
+                            category === "designer"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Услуги дизайнера
+                    </option>
+
+                    <option
+                        value="urgent"
+                        ${
+                            category === "urgent"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Срочность
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Изделие
+                </label>
+
+                <select
+                    class="edit-product"
+                    data-selected-product="${escapeHtml(
+                        product
+                    )}"
+                    onchange="
+                        updateEditProductPrice(this)
+                    "
+                >
+                    ${getEditProductOptionsHtml(
+                        category,
+                        product
+                    )}
+                </select>
+
+            </div>
+
+
+            <div
+                class="edit-extra-field"
+            >
+                ${
+                    (
+                        category === "cup_custom" ||
+                        category === "packaging"
+                    )
+                        ? `
+                            <div class="field">
+                                <label>
+                                    Описание
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="edit-description"
+                                    value="${escapeHtml(
+                                        description
+                                    )}"
+                                    placeholder="Описание"
+                                >
+                            </div>
+                        `
+                        : ""
+                }
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Количество
+                </label>
+
+                <input
+                    type="number"
+                    class="edit-quantity"
+                    min="1"
+                    value="${quantity}"
+                    oninput="
+                        updateEditDiplomaPrice(this)
+                    "
+                >
+
+            </div>
+
+
+            <div class="manual-prices">
+
+                <div class="field">
+
+                    <label>
+                        Цена продажи / шт.
+                    </label>
+
+                    <input
+                        type="number"
+                        class="edit-sale"
+                        min="0"
+                        step="0.01"
+                        value="${sale}"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Себестоимость / шт.
+                    </label>
+
+                    <input
+                        type="number"
+                        class="edit-cost"
+                        min="0"
+                        step="0.01"
+                        value="${cost}"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
     `;
-
-    document.body.appendChild(modal);
-
-    addModalStyles();
 }
 
+
+function getEditProductOptionsHtml(
+    category,
+    selected
+) {
+    let html =
+        `<option value="">Выберите изделие</option>`;
+
+    if (category === "diploma") {
+
+        const catalog =
+            loadCatalog();
+
+        Object.entries(
+            catalog.diplomaPrices
+        ).forEach(
+            ([key, item]) => {
+
+                html += `
+                    <option
+                        value="${escapeHtml(key)}"
+                        ${
+                            key === selected
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        ${escapeHtml(
+                            item.name
+                        )}
+                    </option>
+                `;
+            }
+        );
+    }
+
+    if (category === "cup_ready") {
+
+        const catalog =
+            loadCatalog();
+
+        Object.entries(
+            catalog.readyCups
+        ).forEach(
+            ([key, item]) => {
+
+                html += `
+                    <option
+                        value="${escapeHtml(key)}"
+                        ${
+                            key === selected
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        ${escapeHtml(
+                            item.name
+                        )}
+                    </option>
+                `;
+            }
+        );
+    }
+
+    if (category === "cup_print") {
+        html = `
+            <option
+                value="cup_print"
+                selected
+            >
+                Печать на чашке
+            </option>
+        `;
+    }
+
+    if (category === "cup_custom") {
+        html = `
+            <option
+                value="cup_custom"
+                selected
+            >
+                Чашка
+            </option>
+        `;
+    }
+
+    if (category === "packaging") {
+        html = `
+            <option
+                value="packaging"
+                selected
+            >
+                Упаковка для чашки
+            </option>
+        `;
+    }
+
+    if (category === "designer") {
+        html = `
+            <option
+                value="designer"
+                selected
+            >
+                Услуги дизайнера
+            </option>
+        `;
+    }
+
+    if (category === "urgent") {
+        html = `
+            <option
+                value="urgent"
+                selected
+            >
+                Срочность
+            </option>
+        `;
+    }
+
+    return html;
+}
+
+
+function updateEditProductOptions(
+    categorySelect
+) {
+    const card =
+        categorySelect.closest(
+            "[data-edit-position]"
+        );
+
+    if (!card) return;
+
+    const category =
+        categorySelect.value;
+
+    const product =
+        card.querySelector(
+            ".edit-product"
+        );
+
+    const extra =
+        card.querySelector(
+            ".edit-extra-field"
+        );
+
+    if (!product) return;
+
+    product.innerHTML =
+        getEditProductOptionsHtml(
+            category,
+            ""
+        );
+
+    if (extra) {
+        if (
+            category === "cup_custom" ||
+            category === "packaging"
+        ) {
+            extra.innerHTML = `
+                <div class="field">
+                    <label>
+                        Описание
+                    </label>
+
+                    <input
+                        type="text"
+                        class="edit-description"
+                        placeholder="Описание"
+                    >
+                </div>
+            `;
+        } else {
+            extra.innerHTML = "";
+        }
+    }
+
+    updateEditProductPrice(
+        product
+    );
+}
+
+
+function updateEditProductPrice(
+    productSelect
+) {
+    const card =
+        productSelect.closest(
+            "[data-edit-position]"
+        );
+
+    if (!card) return;
+
+    const category =
+        card.querySelector(
+            ".edit-category"
+        )?.value;
+
+    const product =
+        productSelect.value;
+
+    const quantity =
+        Number(
+            card.querySelector(
+                ".edit-quantity"
+            )?.value || 1
+        );
+
+    const sale =
+        card.querySelector(
+            ".edit-sale"
+        );
+
+    const cost =
+        card.querySelector(
+            ".edit-cost"
+        );
+
+    if (!sale || !cost) return;
+
+    if (category === "diploma") {
+
+        const price =
+            getDiplomaPrice(
+                product,
+                quantity
+            );
+
+        sale.value =
+            price.sale;
+
+        cost.value =
+            price.cost;
+
+        return;
+    }
+
+    if (category === "cup_ready") {
+
+        const catalog =
+            loadCatalog();
+
+        const cup =
+            catalog.readyCups[product];
+
+        if (cup) {
+            sale.value =
+                cup.sale;
+
+            cost.value =
+                cup.cost;
+        }
+
+        return;
+    }
+
+    if (
+        category === "cup_print" ||
+        category === "cup_custom" ||
+        category === "packaging" ||
+        category === "designer" ||
+        category === "urgent"
+    ) {
+        sale.value = 0;
+        cost.value = 0;
+    }
+}
+
+
+function updateEditDiplomaPrice(
+    quantityInput
+) {
+    const card =
+        quantityInput.closest(
+            "[data-edit-position]"
+        );
+
+    if (!card) return;
+
+    const category =
+        card.querySelector(
+            ".edit-category"
+        )?.value;
+
+    const product =
+        card.querySelector(
+            ".edit-product"
+        )?.value;
+
+    if (category !== "diploma") {
+        return;
+    }
+
+    const quantity =
+        Number(
+            quantityInput.value || 1
+        );
+
+    const price =
+        getDiplomaPrice(
+            product,
+            quantity
+        );
+
+    const sale =
+        card.querySelector(
+            ".edit-sale"
+        );
+
+    const cost =
+        card.querySelector(
+            ".edit-cost"
+        );
+
+    if (sale) {
+        sale.value =
+            price.sale;
+    }
+
+    if (cost) {
+        cost.value =
+            price.cost;
+    }
+}
+
+
+function addEditOrderPosition() {
+    const container =
+        document.getElementById(
+            "editOrderPositions"
+        );
+
+    if (!container) return;
+
+    const index =
+        container.querySelectorAll(
+            "[data-edit-position]"
+        ).length;
+
+    container.insertAdjacentHTML(
+        "beforeend",
+        createEditPositionHtml(
+            {},
+            index
+        )
+    );
+}
+
+
+function removeEditPosition(
+    button
+) {
+    const card =
+        button.closest(
+            "[data-edit-position]"
+        );
+
+    if (card) {
+        card.remove();
+    }
+
+    renumberEditPositions();
+}
+
+
+function renumberEditPositions() {
+    document
+        .querySelectorAll(
+            "#editOrderPositions [data-edit-position]"
+        )
+        .forEach(
+            (card, index) => {
+
+                const title =
+                    card.querySelector(
+                        ".edit-position-header strong"
+                    );
+
+                if (title) {
+                    title.textContent =
+                        `Позиция ${index + 1}`;
+                }
+            }
+        );
+}
+
+
+function collectEditedPositions() {
+    const positions = [];
+
+    document
+        .querySelectorAll(
+            "#editOrderPositions [data-edit-position]"
+        )
+        .forEach(card => {
+
+            const category =
+                card.querySelector(
+                    ".edit-category"
+                )?.value || "";
+
+            const product =
+                card.querySelector(
+                    ".edit-product"
+                )?.value || "";
+
+            if (!category || !product) {
+                return;
+            }
+
+            const quantity =
+                Math.max(
+                    1,
+                    Number(
+                        card.querySelector(
+                            ".edit-quantity"
+                        )?.value || 1
+                    )
+                );
+
+            const sale =
+                Number(
+                    card.querySelector(
+                        ".edit-sale"
+                    )?.value || 0
+                );
+
+            const cost =
+                Number(
+                    card.querySelector(
+                        ".edit-cost"
+                    )?.value || 0
+                );
+
+            const description =
+                card.querySelector(
+                    ".edit-description"
+                )?.value || "";
+
+            positions.push({
+                category,
+                product,
+                description,
+                quantity,
+                sale,
+                cost,
+                saleTotal:
+                    sale * quantity,
+                costTotal:
+                    cost * quantity,
+                profitTotal:
+                    (sale - cost) *
+                    quantity
+            });
+        });
+
+    return positions;
+}
+
+
+function saveEditedOrder(id) {
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(item =>
+            Number(item.id) ===
+            Number(id)
+        );
+
+    if (!order) return;
+
+    const positions =
+        collectEditedPositions();
+
+    if (!positions.length) {
+        alert(
+            "В заказе должна быть хотя бы одна позиция."
+        );
+        return;
+    }
+
+    const client =
+        document.getElementById(
+            "editOrderClient"
+        )?.value.trim() ||
+        "Без имени";
+
+    const totals =
+        positions.reduce(
+            (result, position) => {
+
+                result.sale +=
+                    position.saleTotal;
+
+                result.cost +=
+                    position.costTotal;
+
+                result.profit +=
+                    position.profitTotal;
+
+                return result;
+
+            },
+            {
+                sale: 0,
+                cost: 0,
+                profit: 0
+            }
+        );
+
+    order.client =
+        client;
+
+    order.positions =
+        positions;
+
+    order.saleTotal =
+        totals.sale;
+
+    order.costTotal =
+        totals.cost;
+
+    order.profitTotal =
+        totals.profit;
+
+    order.sale =
+        `${formatMoney(
+            totals.sale
+        )} грн`;
+
+    order.cost =
+        `${formatMoney(
+            totals.cost
+        )} грн`;
+
+    order.profit =
+        `${formatMoney(
+            totals.profit
+        )} грн`;
+
+    saveOrders(orders);
+
+    alert(
+        `Заказ №${order.number} изменён.`
+    );
+
+    renderOrderDetails(
+        order
+    );
+
+    renderOrderCards();
+}
+
+
+// ---------- ЗАКРЫТИЕ ----------
 
 function closeOrderDetails() {
     const modal =
-        document.getElementById("orderModal");
+        document.getElementById(
+            "orderModal"
+        );
 
     if (modal) {
-        modal.classList.remove("active");
+        modal.classList.remove(
+            "active"
+        );
     }
 }
 
@@ -1422,14 +3416,18 @@ function closeOrders() {
 }
 
 
-// ---------- УДАЛЕНИЕ ЗАКАЗА ----------
+// =====================================================
+// УДАЛЕНИЕ
+// =====================================================
 
 function deleteOrder(id) {
-    const orders = getOrders();
+    const orders =
+        getOrders();
 
     const order =
         orders.find(item =>
-            Number(item.id) === Number(id)
+            Number(item.id) ===
+            Number(id)
         );
 
     if (!order) return;
@@ -1447,42 +3445,61 @@ function deleteOrder(id) {
 
     const updated =
         orders.filter(item =>
-            Number(item.id) !== Number(id)
+            Number(item.id) !==
+            Number(id)
         );
 
-    localStorage.setItem(
-        "printAppOrders",
-        JSON.stringify(updated)
+    saveOrders(
+        updated
     );
 
-    renderOrders();
+    renderOrderCards();
 }
 
 
-// ---------- КАТАЛОГ ----------
+// =====================================================
+// КАТАЛОГ
+// =====================================================
 
 function showCatalog() {
     hideAllScreens();
 
     const screen =
-        document.getElementById("screenCatalog");
+        document.getElementById(
+            "screenCatalog"
+        );
 
     if (!screen) return;
 
-    screen.classList.add("active");
+    screen.classList.add(
+        "active"
+    );
 
     const title =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const subtitle =
-        document.getElementById("pageSubtitle");
+        document.getElementById(
+            "pageSubtitle"
+        );
 
-    if (title) title.textContent = "Каталог";
-    if (subtitle) subtitle.textContent = "Цены и себестоимость";
+    if (title) {
+        title.textContent =
+            "Каталог";
+    }
+
+    if (subtitle) {
+        subtitle.textContent =
+            "Цены и себестоимость";
+    }
 
     renderCatalog();
 
-    setActiveNav("Каталог");
+    setActiveNav(
+        "Каталог"
+    );
 }
 
 
@@ -1493,45 +3510,62 @@ function openCatalog() {
 
 function renderCatalog() {
     const container =
-        document.getElementById("catalogContent");
+        document.getElementById(
+            "catalogContent"
+        );
 
     if (!container) return;
 
-    const catalog = loadCatalog();
+    const catalog =
+        loadCatalog();
 
     let html = "";
-
-    // ДИПЛОМЫ
 
     html += `
         <div class="catalog-section">
 
-            <h3>Дипломы</h3>
+            <h3>
+                Дипломы
+            </h3>
 
             <div class="catalog-table">
     `;
 
-    Object.entries(catalog.diplomaPrices)
-        .forEach(([key, diploma]) => {
+    Object.entries(
+        catalog.diplomaPrices
+    ).forEach(
+        ([key, diploma]) => {
 
             html += `
                 <div class="catalog-product">
 
                     <h4>
-                        ${escapeHtml(diploma.name)}
+                        ${escapeHtml(
+                            diploma.name
+                        )}
                     </h4>
 
                     <div class="catalog-grid">
 
                         <div class="catalog-grid-head">
-                            <span>Количество</span>
-                            <span>Продажа</span>
-                            <span>Себестоимость</span>
+                            <span>
+                                Количество
+                            </span>
+
+                            <span>
+                                Продажа
+                            </span>
+
+                            <span>
+                                Себестоимость
+                            </span>
                         </div>
             `;
 
-            Object.entries(diploma.tiers)
-                .forEach(([tierKey, tier]) => {
+            Object.entries(
+                diploma.tiers
+            ).forEach(
+                ([tierKey, tier]) => {
 
                     const range =
                         tier.max === Infinity
@@ -1539,9 +3573,13 @@ function renderCatalog() {
                             : `${tier.min}–${tier.max}`;
 
                     html += `
-                        <div class="catalog-grid-row">
+                        <div
+                            class="catalog-grid-row"
+                        >
 
-                            <span>${range} шт.</span>
+                            <span>
+                                ${range} шт.
+                            </span>
 
                             <input
                                 type="number"
@@ -1549,7 +3587,9 @@ function renderCatalog() {
                                 data-diploma="${escapeHtml(key)}"
                                 data-tier="${tierKey}"
                                 data-type="sale"
-                                value="${Number(tier.sale || 0)}"
+                                value="${Number(
+                                    tier.sale || 0
+                                )}"
                             >
 
                             <input
@@ -1558,18 +3598,22 @@ function renderCatalog() {
                                 data-diploma="${escapeHtml(key)}"
                                 data-tier="${tierKey}"
                                 data-type="cost"
-                                value="${Number(tier.cost || 0)}"
+                                value="${Number(
+                                    tier.cost || 0
+                                )}"
                             >
 
                         </div>
                     `;
-                });
+                }
+            );
 
             html += `
                     </div>
                 </div>
             `;
-        });
+        }
+    );
 
     html += `
             </div>
@@ -1577,25 +3621,33 @@ function renderCatalog() {
     `;
 
 
-    // ГОТОВЫЕ ЧАШКИ
-
     html += `
         <div class="catalog-section">
 
-            <h3>Готовые чашки</h3>
+            <h3>
+                Готовые чашки
+            </h3>
     `;
 
-    Object.entries(catalog.readyCups)
-        .forEach(([key, cup]) => {
+    Object.entries(
+        catalog.readyCups
+    ).forEach(
+        ([key, cup]) => {
 
             html += `
-                <div class="catalog-product">
+                <div
+                    class="catalog-product"
+                >
 
                     <h4>
-                        ${escapeHtml(cup.name)}
+                        ${escapeHtml(
+                            cup.name
+                        )}
                     </h4>
 
-                    <div class="catalog-two-inputs">
+                    <div
+                        class="catalog-two-inputs"
+                    >
 
                         <label>
                             Цена продажи
@@ -1606,7 +3658,9 @@ function renderCatalog() {
                                 step="0.01"
                                 data-cup="${escapeHtml(key)}"
                                 data-type="sale"
-                                value="${Number(cup.sale || 0)}"
+                                value="${Number(
+                                    cup.sale || 0
+                                )}"
                             >
                         </label>
 
@@ -1619,7 +3673,9 @@ function renderCatalog() {
                                 step="0.01"
                                 data-cup="${escapeHtml(key)}"
                                 data-type="cost"
-                                value="${Number(cup.cost || 0)}"
+                                value="${Number(
+                                    cup.cost || 0
+                                )}"
                             >
                         </label>
 
@@ -1627,7 +3683,8 @@ function renderCatalog() {
 
                 </div>
             `;
-        });
+        }
+    );
 
     html += `
         </div>
@@ -1649,55 +3706,85 @@ function renderCatalog() {
         </button>
     `;
 
-    container.innerHTML = html;
+    container.innerHTML =
+        html;
 
     addCatalogStyles();
 }
 
 
 function saveCatalogFromScreen() {
-    const catalog = loadCatalog();
+    const catalog =
+        loadCatalog();
 
     document
-        .querySelectorAll("[data-diploma]")
+        .querySelectorAll(
+            "[data-diploma]"
+        )
         .forEach(input => {
 
-            const key = input.dataset.diploma;
-            const tier = input.dataset.tier;
-            const type = input.dataset.type;
+            const key =
+                input.dataset.diploma;
 
-            if (!catalog.diplomaPrices[key]) return;
-            if (!catalog.diplomaPrices[key].tiers[tier]) return;
+            const tier =
+                input.dataset.tier;
 
-            catalog.diplomaPrices[key].tiers[tier][type] =
-                Number(input.value || 0);
-        });
+            const type =
+                input.dataset.type;
 
-    document
-        .querySelectorAll("[data-cup]")
-        .forEach(input => {
-
-            const key = input.dataset.cup;
-            const type = input.dataset.type;
-
-            if (!catalog.readyCups[key]) return;
-
-            catalog.readyCups[key][type] =
-                Number(input.value || 0);
-        });
-
-    // Совместимость:
-    // tier 1 используется как базовая цена для старого формата.
-    Object.values(catalog.diplomaPrices)
-        .forEach(diploma => {
-            if (diploma.tiers[1] && diploma.tiers[2]) {
-                // Ничего дополнительно не делаем.
+            if (
+                !catalog.diplomaPrices[key]
+            ) {
+                return;
             }
+
+            if (
+                !catalog.diplomaPrices[key]
+                    .tiers[tier]
+            ) {
+                return;
+            }
+
+            catalog
+                .diplomaPrices[key]
+                .tiers[tier][type] =
+                Number(
+                    input.value || 0
+                );
         });
 
-    saveCatalog(catalog);
+    document
+        .querySelectorAll(
+            "[data-cup]"
+        )
+        .forEach(input => {
 
-    alert("Каталог сохранён.");
+            const key =
+                input.dataset.cup;
+
+            const type =
+                input.dataset.type;
+
+            if (
+                !catalog.readyCups[key]
+            ) {
+                return;
+            }
+
+            catalog
+                .readyCups[key][type] =
+                Number(
+                    input.value || 0
+                );
+        });
+
+    saveCatalog(
+        catalog
+    );
+
+    alert(
+        "Каталог сохранён."
+    );
 
     renderCatalog();
 }
@@ -1714,119 +3801,179 @@ function resetCatalog() {
 
     saveCatalog({
         diplomaPrices:
-            structuredClone(DEFAULT_DIPLOMA_PRICES),
+            structuredClone(
+                DEFAULT_DIPLOMA_PRICES
+            ),
 
         readyCups:
-            structuredClone(DEFAULT_READY_CUPS)
+            structuredClone(
+                DEFAULT_READY_CUPS
+            )
     });
 
     renderCatalog();
 }
 
 
-// ---------- СТАТИСТИКА ----------
+// =====================================================
+// СТАТИСТИКА
+// =====================================================
 
 function showStatistics() {
     hideAllScreens();
 
     let screen =
-        document.getElementById("screenStatistics");
+        document.getElementById(
+            "screenStatistics"
+        );
 
     if (!screen) {
-        screen = document.createElement("section");
 
-        screen.id = "screenStatistics";
+        screen =
+            document.createElement(
+                "section"
+            );
 
-        screen.className = "screen";
+        screen.id =
+            "screenStatistics";
+
+        screen.className =
+            "screen";
 
         const main =
-            document.querySelector("main");
+            document.querySelector(
+                "main"
+            );
 
         if (main) {
-            main.appendChild(screen);
+            main.appendChild(
+                screen
+            );
         } else {
-            document.body.appendChild(screen);
+            document.body.appendChild(
+                screen
+            );
         }
     }
 
-    screen.classList.add("active");
+    screen.classList.add(
+        "active"
+    );
 
     const title =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const subtitle =
-        document.getElementById("pageSubtitle");
+        document.getElementById(
+            "pageSubtitle"
+        );
 
-    if (title) title.textContent = "Статистика";
-    if (subtitle) subtitle.textContent = "Продажи и прибыль";
+    if (title) {
+        title.textContent =
+            "Статистика";
+    }
+
+    if (subtitle) {
+        subtitle.textContent =
+            "Продажи и прибыль";
+    }
 
     renderStatistics();
 
-    setActiveNav("Статистика");
+    setActiveNav(
+        "Статистика"
+    );
 }
 
 
 function renderStatistics() {
     const screen =
-        document.getElementById("screenStatistics");
+        document.getElementById(
+            "screenStatistics"
+        );
 
     if (!screen) return;
 
-    const orders = getOrders();
+    const orders =
+        getOrders();
 
     const period =
-        localStorage.getItem("statisticsPeriod") || "all";
+        localStorage.getItem(
+            "statisticsPeriod"
+        ) || "all";
 
     const filtered =
-        filterOrdersByPeriod(orders, period);
+        filterOrdersByPeriod(
+            orders,
+            period
+        );
 
     const totalSale =
         filtered.reduce(
             (sum, order) =>
-                sum + getOrderSale(order),
+                sum +
+                getOrderSale(order),
             0
         );
 
     const totalCost =
         filtered.reduce(
             (sum, order) =>
-                sum + getOrderCost(order),
+                sum +
+                getOrderCost(order),
             0
         );
 
     const totalProfit =
         filtered.reduce(
             (sum, order) =>
-                sum + getOrderProfit(order),
+                sum +
+                getOrderProfit(order),
             0
         );
 
     const average =
         filtered.length
-            ? totalSale / filtered.length
+            ? totalSale /
+              filtered.length
             : 0;
 
     const margin =
         totalSale
-            ? (totalProfit / totalSale) * 100
+            ? (
+                totalProfit /
+                totalSale
+            ) * 100
             : 0;
 
     const statuses = {};
 
     filtered.forEach(order => {
+
         const status =
-            getOrderStatus(order);
+            getOrderStatus(
+                order
+            );
 
         statuses[status] =
-            (statuses[status] || 0) + 1;
+            (
+                statuses[status] ||
+                0
+            ) + 1;
     });
 
     screen.innerHTML = `
         <div class="statistics-container">
 
-            <div class="statistics-period">
+            <div
+                class="statistics-period"
+            >
 
-                <label>Период</label>
+                <label>
+                    Период
+                </label>
 
                 <select
                     onchange="
@@ -1838,23 +3985,47 @@ function renderStatistics() {
                     "
                 >
 
-                    <option value="all"
-                        ${period === "all" ? "selected" : ""}>
+                    <option
+                        value="all"
+                        ${
+                            period === "all"
+                                ? "selected"
+                                : ""
+                        }
+                    >
                         Всё время
                     </option>
 
-                    <option value="today"
-                        ${period === "today" ? "selected" : ""}>
+                    <option
+                        value="today"
+                        ${
+                            period === "today"
+                                ? "selected"
+                                : ""
+                        }
+                    >
                         Сегодня
                     </option>
 
-                    <option value="7days"
-                        ${period === "7days" ? "selected" : ""}>
+                    <option
+                        value="7days"
+                        ${
+                            period === "7days"
+                                ? "selected"
+                                : ""
+                        }
+                    >
                         Последние 7 дней
                     </option>
 
-                    <option value="month"
-                        ${period === "month" ? "selected" : ""}>
+                    <option
+                        value="month"
+                        ${
+                            period === "month"
+                                ? "selected"
+                                : ""
+                        }
+                    >
                         Текущий месяц
                     </option>
 
@@ -1862,52 +4033,113 @@ function renderStatistics() {
 
             </div>
 
-            <div class="statistics-grid">
+            <div
+                class="statistics-grid"
+            >
 
                 <div class="stat-card">
-                    <span>Заказов</span>
-                    <strong>${filtered.length}</strong>
+                    <span>
+                        Заказов
+                    </span>
+
+                    <strong>
+                        ${filtered.length}
+                    </strong>
                 </div>
 
                 <div class="stat-card">
-                    <span>Продажи</span>
-                    <strong>${formatMoney(totalSale)} грн</strong>
+                    <span>
+                        Продажи
+                    </span>
+
+                    <strong>
+                        ${formatMoney(
+                            totalSale
+                        )} грн
+                    </strong>
                 </div>
 
                 <div class="stat-card">
-                    <span>Себестоимость</span>
-                    <strong>${formatMoney(totalCost)} грн</strong>
+                    <span>
+                        Себестоимость
+                    </span>
+
+                    <strong>
+                        ${formatMoney(
+                            totalCost
+                        )} грн
+                    </strong>
                 </div>
 
                 <div class="stat-card">
-                    <span>Прибыль</span>
-                    <strong>${formatMoney(totalProfit)} грн</strong>
+                    <span>
+                        Прибыль
+                    </span>
+
+                    <strong>
+                        ${formatMoney(
+                            totalProfit
+                        )} грн
+                    </strong>
                 </div>
 
                 <div class="stat-card">
-                    <span>Средний заказ</span>
-                    <strong>${formatMoney(average)} грн</strong>
+                    <span>
+                        Средний заказ
+                    </span>
+
+                    <strong>
+                        ${formatMoney(
+                            average
+                        )} грн
+                    </strong>
                 </div>
 
                 <div class="stat-card">
-                    <span>Маржа</span>
-                    <strong>${margin.toFixed(1)}%</strong>
+                    <span>
+                        Маржа
+                    </span>
+
+                    <strong>
+                        ${margin.toFixed(
+                            1
+                        )}%
+                    </strong>
                 </div>
 
             </div>
 
-            <div class="statistics-statuses">
+            <div
+                class="statistics-statuses"
+            >
 
-                <h3>Статусы</h3>
+                <h3>
+                    Статусы
+                </h3>
 
-                ${Object.entries(statuses)
-                    .map(([status, count]) => `
-                        <div class="statistics-status-row">
-                            <span>${escapeHtml(status)}</span>
-                            <strong>${count}</strong>
-                        </div>
-                    `)
-                    .join("")}
+                ${
+                    Object.entries(
+                        statuses
+                    )
+                    .map(
+                        ([status, count]) => `
+                            <div
+                                class="statistics-status-row"
+                            >
+                                <span>
+                                    ${escapeHtml(
+                                        status
+                                    )}
+                                </span>
+
+                                <strong>
+                                    ${count}
+                                </strong>
+                            </div>
+                        `
+                    )
+                    .join("")
+                }
 
             </div>
 
@@ -1918,67 +4150,118 @@ function renderStatistics() {
 }
 
 
-function filterOrdersByPeriod(orders, period) {
-    if (period === "all") {
+function filterOrdersByPeriod(
+    orders,
+    period
+) {
+    if (
+        period === "all"
+    ) {
         return orders;
     }
 
-    const now = new Date();
+    const now =
+        new Date();
 
-    return orders.filter(order => {
-        const date =
-            new Date(getOrderDate(order));
+    return orders.filter(
+        order => {
 
-        if (period === "today") {
-            return (
-                date.getFullYear() === now.getFullYear() &&
-                date.getMonth() === now.getMonth() &&
-                date.getDate() === now.getDate()
-            );
+            const date =
+                new Date(
+                    getOrderDate(order)
+                );
+
+            if (
+                period === "today"
+            ) {
+                return (
+                    date.getFullYear() ===
+                        now.getFullYear() &&
+
+                    date.getMonth() ===
+                        now.getMonth() &&
+
+                    date.getDate() ===
+                        now.getDate()
+                );
+            }
+
+            if (
+                period === "7days"
+            ) {
+                const sevenDaysAgo =
+                    Date.now() -
+                    7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000;
+
+                return (
+                    getOrderDate(order) >=
+                    sevenDaysAgo
+                );
+            }
+
+            if (
+                period === "month"
+            ) {
+                return (
+                    date.getFullYear() ===
+                        now.getFullYear() &&
+
+                    date.getMonth() ===
+                        now.getMonth()
+                );
+            }
+
+            return true;
         }
-
-        if (period === "7days") {
-            const sevenDaysAgo =
-                Date.now() -
-                7 * 24 * 60 * 60 * 1000;
-
-            return getOrderDate(order) >= sevenDaysAgo;
-        }
-
-        if (period === "month") {
-            return (
-                date.getFullYear() === now.getFullYear() &&
-                date.getMonth() === now.getMonth()
-            );
-        }
-
-        return true;
-    });
+    );
 }
 
 
-// ---------- ГЛАВНЫЙ ЭКРАН ----------
+// =====================================================
+// ГЛАВНЫЙ ЭКРАН
+// =====================================================
 
 function showOrder() {
     hideAllScreens();
 
     const screen =
-        document.getElementById("screenOrder");
+        document.getElementById(
+            "screenOrder"
+        );
 
     if (!screen) return;
 
-    screen.classList.add("active");
+    screen.classList.add(
+        "active"
+    );
 
     const title =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const subtitle =
-        document.getElementById("pageSubtitle");
+        document.getElementById(
+            "pageSubtitle"
+        );
 
-    if (title) title.textContent = "Новый заказ";
-    if (subtitle) subtitle.textContent = "Расчёт заказа";
+    if (title) {
+        title.textContent =
+            "Новый заказ";
+    }
 
-    setActiveNav("Новый заказ");
+    if (subtitle) {
+        subtitle.textContent =
+            "Расчёт заказа";
+    }
+
+    setActiveNav(
+        "Новый заказ"
+    );
 }
 
 
@@ -1987,28 +4270,47 @@ function showOrderScreen() {
 }
 
 
-// ---------- НАСТРОЙКИ ----------
+// =====================================================
+// НАСТРОЙКИ
+// =====================================================
 
 function showSettings() {
     hideAllScreens();
 
     const screen =
-        document.getElementById("screenSettings");
+        document.getElementById(
+            "screenSettings"
+        );
 
     if (!screen) return;
 
-    screen.classList.add("active");
+    screen.classList.add(
+        "active"
+    );
 
     const title =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const subtitle =
-        document.getElementById("pageSubtitle");
+        document.getElementById(
+            "pageSubtitle"
+        );
 
-    if (title) title.textContent = "Настройки";
-    if (subtitle) subtitle.textContent = "Настройки приложения";
+    if (title) {
+        title.textContent =
+            "Настройки";
+    }
 
-    setActiveNav("Настройки");
+    if (subtitle) {
+        subtitle.textContent =
+            "Настройки приложения";
+    }
+
+    setActiveNav(
+        "Настройки"
+    );
 }
 
 
@@ -2021,22 +4323,36 @@ function deleteAllOrders() {
         return;
     }
 
-    localStorage.removeItem("printAppOrders");
+    localStorage.removeItem(
+        "printAppOrders"
+    );
 
-    alert("Все заказы удалены.");
+    alert(
+        "Все заказы удалены."
+    );
+
+    ordersSearch = "";
 
     showOrders();
 }
 
 
-// ---------- НАВИГАЦИЯ ----------
+// =====================================================
+// НАВИГАЦИЯ
+// =====================================================
 
 function hideAllScreens() {
     document
-        .querySelectorAll(".screen")
-        .forEach(screen => {
-            screen.classList.remove("active");
-        });
+        .querySelectorAll(
+            ".screen"
+        )
+        .forEach(
+            screen => {
+                screen.classList.remove(
+                    "active"
+                );
+            }
+        );
 }
 
 
@@ -2045,63 +4361,100 @@ function setActiveNav(name) {
         .querySelectorAll(
             ".bottom-nav .nav-item, .extra-nav-item"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.classList.toggle(
-                "active",
-                button.dataset.nav === name
-            );
-        });
+                button.classList.toggle(
+                    "active",
+                    button.dataset.nav ===
+                        name
+                );
+            }
+        );
 }
 
 
-function getBottomNavigation(active = "") {
+function getBottomNavigation(
+    active = ""
+) {
     return `
-        <div class="extra-bottom-nav">
+        <div
+            class="extra-bottom-nav"
+        >
 
             <button
-                class="extra-nav-item ${active === "Новый заказ" ? "active" : ""}"
+                class="extra-nav-item ${
+                    active === "Новый заказ"
+                        ? "active"
+                        : ""
+                }"
                 data-nav="Новый заказ"
                 onclick="showOrder()"
             >
                 ＋
-                <span>Заказ</span>
+                <span>
+                    Заказ
+                </span>
             </button>
 
             <button
-                class="extra-nav-item ${active === "Каталог" ? "active" : ""}"
+                class="extra-nav-item ${
+                    active === "Каталог"
+                        ? "active"
+                        : ""
+                }"
                 data-nav="Каталог"
                 onclick="showCatalog()"
             >
                 📦
-                <span>Каталог</span>
+                <span>
+                    Каталог
+                </span>
             </button>
 
             <button
-                class="extra-nav-item ${active === "Заказы" ? "active" : ""}"
+                class="extra-nav-item ${
+                    active === "Заказы"
+                        ? "active"
+                        : ""
+                }"
                 data-nav="Заказы"
                 onclick="showOrders()"
             >
                 📋
-                <span>Заказы</span>
+                <span>
+                    Заказы
+                </span>
             </button>
 
             <button
-                class="extra-nav-item ${active === "Статистика" ? "active" : ""}"
+                class="extra-nav-item ${
+                    active === "Статистика"
+                        ? "active"
+                        : ""
+                }"
                 data-nav="Статистика"
                 onclick="showStatistics()"
             >
                 📊
-                <span>Статистика</span>
+                <span>
+                    Статистика
+                </span>
             </button>
 
             <button
-                class="extra-nav-item ${active === "Настройки" ? "active" : ""}"
+                class="extra-nav-item ${
+                    active === "Настройки"
+                        ? "active"
+                        : ""
+                }"
                 data-nav="Настройки"
                 onclick="showSettings()"
             >
                 ⚙️
-                <span>Настройки</span>
+                <span>
+                    Настройки
+                </span>
             </button>
 
         </div>
@@ -2109,19 +4462,28 @@ function getBottomNavigation(active = "") {
 }
 
 
-// ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+// =====================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =====================================================
 
 function formatMoney(value) {
-    return Number(value || 0)
-        .toLocaleString("uk-UA", {
+    return Number(
+        value || 0
+    ).toLocaleString(
+        "uk-UA",
+        {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2
-        });
+        }
+    );
 }
 
 
 function parseMoney(value) {
-    if (typeof value === "number") {
+    if (
+        typeof value ===
+        "number"
+    ) {
         return value;
     }
 
@@ -2135,50 +4497,89 @@ function parseMoney(value) {
             .replace(",", ".")
             .replace(/[^\d.-]/g, "");
 
-    return Number(cleaned) || 0;
+    return (
+        Number(cleaned) ||
+        0
+    );
 }
 
 
 function formatDate(timestamp) {
-    if (!timestamp) return "—";
+    if (!timestamp) {
+        return "—";
+    }
 
     const date =
         new Date(timestamp);
 
-    if (isNaN(date.getTime())) {
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
         return "—";
     }
 
-    return date.toLocaleString("uk-UA", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+    return date.toLocaleString(
+        "uk-UA",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
 }
 
 
 function escapeHtml(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 }
 
 
-// ---------- СТИЛИ ДЛЯ ДИНАМИЧЕСКИХ ЭЛЕМЕНТОВ ----------
+// =====================================================
+// СТИЛИ КАТАЛОГА
+// =====================================================
 
 function addCatalogStyles() {
-    if (document.getElementById("dynamicCatalogStyles")) {
+    if (
+        document.getElementById(
+            "dynamicCatalogStyles"
+        )
+    ) {
         return;
     }
 
-    const style = document.createElement("style");
+    const style =
+        document.createElement(
+            "style"
+        );
 
-    style.id = "dynamicCatalogStyles";
+    style.id =
+        "dynamicCatalogStyles";
 
     style.textContent = `
         .catalog-section {
@@ -2236,20 +4637,35 @@ function addCatalogStyles() {
         }
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(
+        style
+    );
 }
 
 
+// =====================================================
+// СТИЛИ ЗАКАЗОВ И МОДАЛКИ
+// =====================================================
+
 function addModalStyles() {
-    if (document.getElementById("dynamicModalStyles")) {
+    if (
+        document.getElementById(
+            "dynamicModalStyles"
+        )
+    ) {
         return;
     }
 
-    const style = document.createElement("style");
+    const style =
+        document.createElement(
+            "style"
+        );
 
-    style.id = "dynamicModalStyles";
+    style.id =
+        "dynamicModalStyles";
 
     style.textContent = `
+
         #orderModal {
             position: fixed;
             inset: 0;
@@ -2272,8 +4688,9 @@ function addModalStyles() {
             left: 10px;
             right: 10px;
             bottom: 10px;
-            max-height: 90vh;
+            max-height: 92vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             background: #fff;
             border-radius: 22px;
             padding: 18px;
@@ -2284,59 +4701,332 @@ function addModalStyles() {
             display: flex;
             justify-content: space-between;
             gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 15px;
         }
 
-        .order-detail-header button {
+        .order-detail-header h2 {
+            margin: 0 0 5px;
+        }
+
+        .modal-close-button {
             border: 0;
             background: none;
-            font-size: 30px;
+            font-size: 32px;
+            line-height: 1;
+            padding: 0 5px;
         }
 
-        .order-detail-status {
+        .detail-client {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .order-detail-block {
             margin: 16px 0;
         }
 
-        .order-detail-status select {
+        .order-detail-block > label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 7px;
+        }
+
+        .order-detail-block select,
+        .order-detail-block input,
+        .order-comment-input {
             width: 100%;
-            margin-top: 6px;
+            box-sizing: border-box;
+        }
+
+        .order-comment-input {
+            min-height: 100px;
+            resize: vertical;
+            padding: 11px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            font: inherit;
+        }
+
+        .detail-section-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .detail-description {
+            color: #666;
+            margin: 4px 0;
         }
 
         .order-detail-position {
             padding: 12px 0;
             border-bottom: 1px solid #eee;
+            line-height: 1.5;
         }
 
         .order-detail-total {
             margin-top: 16px;
             display: grid;
             gap: 8px;
+            background: #f7f7f7;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .order-save-comment {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .photo-add-button {
+            display: block;
+            text-align: center;
+            padding: 13px;
+            border-radius: 12px;
+            background: #f1f1f1;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .order-photos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .order-photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #eee;
+        }
+
+        .order-photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .order-photo-item button {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 50%;
+            background: rgba(0,0,0,.65);
+            color: white;
+            font-size: 20px;
+            line-height: 20px;
+        }
+
+        .no-photos {
+            color: #777;
+            padding: 10px 0;
+        }
+
+        .order-detail-buttons,
+        .edit-order-actions {
+            display: grid;
+            gap: 9px;
+            margin-top: 20px;
+        }
+
+        .primary-button,
+        .secondary-button,
+        .danger-button {
+            width: 100%;
+            border: 0;
+            border-radius: 12px;
+            padding: 13px;
+            font: inherit;
+            cursor: pointer;
         }
 
         .danger-button {
-            width: 100%;
-            margin-top: 20px;
-            padding: 13px;
-            border: 0;
-            border-radius: 12px;
             background: #e53935;
             color: white;
         }
+
+        .edit-position-card {
+            background: #f7f7f7;
+            border-radius: 15px;
+            padding: 13px;
+            margin-bottom: 12px;
+        }
+
+        .edit-position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .edit-position-header button {
+            border: 0;
+            background: transparent;
+            font-size: 25px;
+        }
+
+        .edit-position-card input,
+        .edit-position-card select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .order-payment {
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        .order-payment b {
+            font-weight: 600;
+        }
+
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(
+        style
+    );
+}
+
+
+function addOrdersStyles() {
+    if (
+        document.getElementById(
+            "dynamicOrdersStyles"
+        )
+    ) {
+        return;
+    }
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+    style.id =
+        "dynamicOrdersStyles";
+
+    style.textContent = `
+
+        .orders-controls {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .orders-controls input,
+        .orders-controls select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .orders-controls input {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .order-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.06);
+        }
+
+        .order-card-main {
+            cursor: pointer;
+        }
+
+        .order-card-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .order-status {
+            font-size: 12px;
+            background: #eee;
+            padding: 5px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+
+        .order-client {
+            font-size: 17px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .order-date {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .order-money {
+            display: grid;
+            gap: 4px;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .order-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .order-card-actions select {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .order-card-actions button {
+            border: 0;
+            border-radius: 9px;
+            padding: 8px 10px;
+        }
+
+        .empty-orders {
+            text-align: center;
+            padding: 40px 20px;
+            color: #777;
+        }
+
+    `;
+
+    document.head.appendChild(
+        style
+    );
 }
 
 
 function addStatisticsStyles() {
-    if (document.getElementById("dynamicStatisticsStyles")) {
+    if (
+        document.getElementById(
+            "dynamicStatisticsStyles"
+        )
+    ) {
         return;
     }
 
-    const style = document.createElement("style");
+    const style =
+        document.createElement(
+            "style"
+        );
 
-    style.id = "dynamicStatisticsStyles";
+    style.id =
+        "dynamicStatisticsStyles";
 
     style.textContent = `
+
         .statistics-container {
             padding-bottom: 30px;
         }
@@ -2387,189 +5077,149 @@ function addStatisticsStyles() {
             padding: 9px 0;
             border-bottom: 1px solid #eee;
         }
+
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(
+        style
+    );
 }
 
 
-function addOrdersStyles() {
-    if (document.getElementById("dynamicOrdersStyles")) {
-        return;
-    }
+// =====================================================
+// ИНИЦИАЛИЗАЦИЯ
+// =====================================================
 
-    const style = document.createElement("style");
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    style.id = "dynamicOrdersStyles";
+        loadCatalog();
 
-    style.textContent = `
-        .orders-controls {
-            display: grid;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
+        addOrdersStyles();
+        addModalStyles();
 
-        .orders-controls input,
-        .orders-controls select {
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .order-card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,.06);
-        }
-
-        .order-card-main {
-            cursor: pointer;
-        }
-
-        .order-card-top {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .order-status {
-            font-size: 12px;
-            background: #eee;
-            padding: 5px 8px;
-            border-radius: 10px;
-        }
-
-        .order-client {
-            font-size: 17px;
-            font-weight: 600;
-            margin-top: 8px;
-        }
-
-        .order-date {
-            font-size: 12px;
-            color: #777;
-            margin-top: 4px;
-        }
-
-        .order-money {
-            display: grid;
-            gap: 4px;
-            margin-top: 12px;
-            font-size: 13px;
-        }
-
-        .order-card-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .order-card-actions select {
-            flex: 1;
-        }
-
-        .order-card-actions button {
-            border: 0;
-            border-radius: 9px;
-            padding: 8px 10px;
-        }
-
-        .empty-orders {
-            text-align: center;
-            padding: 40px 20px;
-            color: #777;
-        }
-    `;
-
-    document.head.appendChild(style);
-}
-
-
-// ---------- ИНИЦИАЛИЗАЦИЯ ----------
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    loadCatalog();
-
-    addOrdersStyles();
-
-    // Если заказов нет — создаём первую позицию
-    const positions =
-        document.getElementById("positions");
-
-    if (
-        positions &&
-        positions.children.length === 0
-    ) {
-        addPosition();
-    }
-
-    // Создаём статистику при необходимости
-    if (!document.getElementById("screenStatistics")) {
-        const statistics =
-            document.createElement("section");
-
-        statistics.id = "screenStatistics";
-        statistics.className = "screen";
-
-        const main =
-            document.querySelector("main");
-
-        if (main) {
-            main.appendChild(statistics);
-        }
-    }
-
-    // Динамическая нижняя навигация
-    document
-        .querySelectorAll(".screen")
-        .forEach(screen => {
-
-            if (
-                screen.id === "screenOrder" ||
-                screen.querySelector(".extra-bottom-nav")
-            ) {
-                return;
-            }
-
-            let active = "";
-
-            if (screen.id === "screenCatalog") {
-                active = "Каталог";
-            }
-
-            if (screen.id === "screenOrders") {
-                active = "Заказы";
-            }
-
-            if (screen.id === "screenSettings") {
-                active = "Настройки";
-            }
-
-            if (screen.id === "screenStatistics") {
-                active = "Статистика";
-            }
-
-            screen.insertAdjacentHTML(
-                "beforeend",
-                getBottomNavigation(active)
+        const positions =
+            document.getElementById(
+                "positions"
             );
-        });
 
-    // Главная навигация
-    setActiveNav("Новый заказ");
+        if (
+            positions &&
+            positions.children.length === 0
+        ) {
+            addPosition();
+        }
 
-    // Service Worker
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-            .register("./sw.js")
-            .catch(error => {
-                console.error(
-                    "Service Worker error:",
-                    error
+        if (
+            !document.getElementById(
+                "screenStatistics"
+            )
+        ) {
+
+            const statistics =
+                document.createElement(
+                    "section"
                 );
-            });
+
+            statistics.id =
+                "screenStatistics";
+
+            statistics.className =
+                "screen";
+
+            const main =
+                document.querySelector(
+                    "main"
+                );
+
+            if (main) {
+                main.appendChild(
+                    statistics
+                );
+            }
+        }
+
+        document
+            .querySelectorAll(
+                ".screen"
+            )
+            .forEach(
+                screen => {
+
+                    if (
+                        screen.id ===
+                            "screenOrder" ||
+                        screen.querySelector(
+                            ".extra-bottom-nav"
+                        )
+                    ) {
+                        return;
+                    }
+
+                    let active = "";
+
+                    if (
+                        screen.id ===
+                        "screenCatalog"
+                    ) {
+                        active =
+                            "Каталог";
+                    }
+
+                    if (
+                        screen.id ===
+                        "screenOrders"
+                    ) {
+                        active =
+                            "Заказы";
+                    }
+
+                    if (
+                        screen.id ===
+                        "screenSettings"
+                    ) {
+                        active =
+                            "Настройки";
+                    }
+
+                    if (
+                        screen.id ===
+                        "screenStatistics"
+                    ) {
+                        active =
+                            "Статистика";
+                    }
+
+                    screen.insertAdjacentHTML(
+                        "beforeend",
+                        getBottomNavigation(
+                            active
+                        )
+                    );
+                }
+            );
+
+        setActiveNav(
+            "Новый заказ"
+        );
+
+        if (
+            "serviceWorker" in
+            navigator
+        ) {
+            navigator.serviceWorker
+                .register(
+                    "./sw.js"
+                )
+                .catch(
+                    error => {
+                        console.error(
+                            "Service Worker error:",
+                            error
+                        );
+                    }
+                );
+        }
     }
-});
+);
