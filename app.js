@@ -84,44 +84,76 @@ const DEFAULT_READY_CUPS = {
 
 
 /* =========================================================
-   ЗАГРУЗКА ЦЕН ИЗ ПАМЯТИ
+   ЗАГРУЗКА КАТАЛОГА
    ========================================================= */
 
-let diplomaPrices =
-    JSON.parse(
-        localStorage.getItem("diplomaPrices") ||
-        "null"
-    );
+function loadCatalog() {
 
-let readyCups =
-    JSON.parse(
-        localStorage.getItem("readyCups") ||
-        "null"
-    );
+    try {
+
+        const savedDiplomas =
+            localStorage.getItem("diplomaPrices");
+
+        const savedCups =
+            localStorage.getItem("readyCups");
 
 
-if (!diplomaPrices) {
+        diplomaPrices =
+            savedDiplomas
+                ? JSON.parse(savedDiplomas)
+                : JSON.parse(
+                    JSON.stringify(
+                        DEFAULT_DIPLOMA_PRICES
+                    )
+                );
 
-    diplomaPrices =
-        JSON.parse(
-            JSON.stringify(DEFAULT_DIPLOMA_PRICES)
+
+        readyCups =
+            savedCups
+                ? JSON.parse(savedCups)
+                : JSON.parse(
+                    JSON.stringify(
+                        DEFAULT_READY_CUPS
+                    )
+                );
+
+
+    } catch (error) {
+
+        console.error(
+            "Ошибка загрузки каталога:",
+            error
         );
+
+
+        diplomaPrices =
+            JSON.parse(
+                JSON.stringify(
+                    DEFAULT_DIPLOMA_PRICES
+                )
+            );
+
+
+        readyCups =
+            JSON.parse(
+                JSON.stringify(
+                    DEFAULT_READY_CUPS
+                )
+            );
+
+    }
 
 }
 
 
-if (!readyCups) {
+let diplomaPrices = {};
+let readyCups = {};
 
-    readyCups =
-        JSON.parse(
-            JSON.stringify(DEFAULT_READY_CUPS)
-        );
-
-}
+loadCatalog();
 
 
 /* =========================================================
-   СОХРАНЕНИЕ ЦЕН
+   СОХРАНЕНИЕ КАТАЛОГА
    ========================================================= */
 
 function saveCatalog() {
@@ -140,13 +172,14 @@ function saveCatalog() {
 
 
 /* =========================================================
-   СОЗДАНИЕ / УДАЛЕНИЕ ПОЗИЦИЙ
+   СОЗДАНИЕ ПОЗИЦИИ
    ========================================================= */
 
 function addPosition() {
 
     const positions =
         document.getElementById("positions");
+
 
     if (!positions) {
         return;
@@ -160,14 +193,18 @@ function addPosition() {
     const position =
         document.createElement("div");
 
-    position.className = "position";
+
+    position.className =
+        "position";
 
 
     position.innerHTML = `
 
         <div class="position-header">
 
-            <strong>Позиция ${positionCount}</strong>
+            <strong>
+                Позиция ${positionCount}
+            </strong>
 
             <button
                 type="button"
@@ -231,17 +268,23 @@ function addPosition() {
 
             <div>
                 <span>Цена продажи:</span>
-                <strong class="sale-price">0 грн</strong>
+                <strong class="sale-price">
+                    0 грн
+                </strong>
             </div>
 
             <div>
                 <span>Себестоимость:</span>
-                <strong class="cost-price">0 грн</strong>
+                <strong class="cost-price">
+                    0 грн
+                </strong>
             </div>
 
             <div>
                 <span>Прибыль:</span>
-                <strong class="profit-price">0 грн</strong>
+                <strong class="profit-price">
+                    0 грн
+                </strong>
             </div>
 
         </div>
@@ -257,13 +300,15 @@ function addPosition() {
 
 
 /* =========================================================
-   УДАЛЕНИЕ
+   УДАЛЕНИЕ ПОЗИЦИИ
    ========================================================= */
 
 function removePosition(button) {
 
     const positions =
-        document.querySelectorAll(".position");
+        document.querySelectorAll(
+            ".position"
+        );
 
 
     if (positions.length <= 1) {
@@ -276,7 +321,14 @@ function removePosition(button) {
     }
 
 
-    button.closest(".position").remove();
+    const position =
+        button.closest(".position");
+
+
+    if (position) {
+        position.remove();
+    }
+
 
     renumberPositions();
 
@@ -292,25 +344,29 @@ function removePosition(button) {
 function renumberPositions() {
 
     const positions =
-        document.querySelectorAll(".position");
+        document.querySelectorAll(
+            ".position"
+        );
 
 
-    positions.forEach((position, index) => {
+    positions.forEach(
+        (position, index) => {
 
-        const title =
-            position.querySelector(
-                ".position-header strong"
-            );
+            const title =
+                position.querySelector(
+                    ".position-header strong"
+                );
 
 
-        if (title) {
+            if (title) {
 
-            title.textContent =
-                `Позиция ${index + 1}`;
+                title.textContent =
+                    `Позиция ${index + 1}`;
+
+            }
 
         }
-
-    });
+    );
 
 }
 
@@ -324,15 +380,26 @@ function updateProductOptions(categorySelect) {
     const position =
         categorySelect.closest(".position");
 
+
+    if (!position) {
+        return;
+    }
+
+
     const category =
         categorySelect.value;
 
 
     const productArea =
-        position.querySelector(".product-area");
+        position.querySelector(
+            ".product-area"
+        );
+
 
     const manualFields =
-        position.querySelector(".manual-fields");
+        position.querySelector(
+            ".manual-fields"
+        );
 
 
     productArea.innerHTML = "";
@@ -340,7 +407,9 @@ function updateProductOptions(categorySelect) {
     manualFields.innerHTML = "";
 
 
-    /* ---------- ДИПЛОМЫ ---------- */
+    /* =====================================================
+       ДИПЛОМЫ
+       ===================================================== */
 
     if (category === "diploma") {
 
@@ -402,11 +471,15 @@ function updateProductOptions(categorySelect) {
 
         `;
 
+        calculatePosition(position);
+
         return;
     }
 
 
-    /* ---------- ГОТОВЫЕ ЧАШКИ ---------- */
+    /* =====================================================
+       ГОТОВЫЕ ЧАШКИ
+       ===================================================== */
 
     if (category === "cup_ready") {
 
@@ -461,11 +534,15 @@ function updateProductOptions(categorySelect) {
 
         `;
 
+        calculatePosition(position);
+
         return;
     }
 
 
-    /* ---------- ПЕЧАТЬ НА ЧАШКЕ ---------- */
+    /* =====================================================
+       ПЕЧАТЬ НА ЧАШКЕ
+       ===================================================== */
 
     if (category === "cup_print") {
 
@@ -482,7 +559,9 @@ function updateProductOptions(categorySelect) {
             />
 
 
-            <label>Сумма печати за 1 шт.</label>
+            <label>
+                Сумма печати за 1 шт.
+            </label>
 
             <input
                 type="number"
@@ -496,11 +575,15 @@ function updateProductOptions(categorySelect) {
 
         `;
 
+        calculatePosition(position);
+
         return;
     }
 
 
-    /* ---------- НЕСТАНДАРТНАЯ ЧАШКА ---------- */
+    /* =====================================================
+       НЕСТАНДАРТНАЯ ЧАШКА
+       ===================================================== */
 
     if (category === "cup_custom") {
 
@@ -526,7 +609,9 @@ function updateProductOptions(categorySelect) {
             />
 
 
-            <label>Себестоимость за 1 шт.</label>
+            <label>
+                Себестоимость за 1 шт.
+            </label>
 
             <input
                 type="number"
@@ -538,7 +623,9 @@ function updateProductOptions(categorySelect) {
             />
 
 
-            <label>Цена продажи за 1 шт.</label>
+            <label>
+                Цена продажи за 1 шт.
+            </label>
 
             <input
                 type="number"
@@ -551,11 +638,15 @@ function updateProductOptions(categorySelect) {
 
         `;
 
+        calculatePosition(position);
+
         return;
     }
 
 
-    /* ---------- УПАКОВКА ---------- */
+    /* =====================================================
+       УПАКОВКА
+       ===================================================== */
 
     if (category === "packaging") {
 
@@ -581,7 +672,9 @@ function updateProductOptions(categorySelect) {
             />
 
 
-            <label>Себестоимость за 1 шт.</label>
+            <label>
+                Себестоимость за 1 шт.
+            </label>
 
             <input
                 type="number"
@@ -593,7 +686,9 @@ function updateProductOptions(categorySelect) {
             />
 
 
-            <label>Цена продажи за 1 шт.</label>
+            <label>
+                Цена продажи за 1 шт.
+            </label>
 
             <input
                 type="number"
@@ -606,17 +701,23 @@ function updateProductOptions(categorySelect) {
 
         `;
 
+        calculatePosition(position);
+
         return;
     }
 
 
-    /* ---------- ДИЗАЙНЕР ---------- */
+    /* =====================================================
+       ДИЗАЙНЕР
+       ===================================================== */
 
     if (category === "designer") {
 
         manualFields.innerHTML = `
 
-            <label>Стоимость услуги</label>
+            <label>
+                Стоимость услуги
+            </label>
 
             <input
                 type="number"
@@ -629,18 +730,24 @@ function updateProductOptions(categorySelect) {
             />
 
         `;
+
+        calculatePosition(position);
 
         return;
     }
 
 
-    /* ---------- СРОЧНОСТЬ ---------- */
+    /* =====================================================
+       СРОЧНОСТЬ
+       ===================================================== */
 
     if (category === "urgent") {
 
         manualFields.innerHTML = `
 
-            <label>Стоимость срочности</label>
+            <label>
+                Стоимость срочности
+            </label>
 
             <input
                 type="number"
@@ -653,6 +760,8 @@ function updateProductOptions(categorySelect) {
             />
 
         `;
+
+        calculatePosition(position);
 
     }
 
@@ -660,7 +769,7 @@ function updateProductOptions(categorySelect) {
 
 
 /* =========================================================
-   ДИПЛОМЫ
+   ДИПЛОМ
    ========================================================= */
 
 function updateDiploma(element) {
@@ -668,7 +777,10 @@ function updateDiploma(element) {
     const position =
         element.closest(".position");
 
+
     calculatePosition(position);
+
+    calculateAll();
 
 }
 
@@ -682,12 +794,25 @@ function updateReadyCup(select) {
     const position =
         select.closest(".position");
 
+
+    if (!position) {
+        return;
+    }
+
+
     const cup =
         readyCups[select.value];
 
 
     const extra =
-        position.querySelector(".cup-extra");
+        position.querySelector(
+            ".cup-extra"
+        );
+
+
+    if (!extra) {
+        return;
+    }
 
 
     if (!cup) {
@@ -704,7 +829,9 @@ function updateReadyCup(select) {
 
         extra.innerHTML = `
 
-            <label>Цвет чашки</label>
+            <label>
+                Цвет чашки
+            </label>
 
             <input
                 type="text"
@@ -728,7 +855,7 @@ function updateReadyCup(select) {
 
 
 /* =========================================================
-   ЦЕНА ДИПЛОМА
+   ПОЛУЧЕНИЕ ЦЕНЫ ДИПЛОМА
    ========================================================= */
 
 function getDiplomaPrice(
@@ -739,6 +866,7 @@ function getDiplomaPrice(
 
     const key =
         `${type}_${size}`;
+
 
     const prices =
         diplomaPrices[key];
@@ -796,11 +924,10 @@ function calculatePosition(position) {
     const category =
         position.querySelector(
             ".category"
-        )?.value;
+        )?.value || "";
 
 
     let sale = 0;
-
     let cost = 0;
 
 
@@ -811,13 +938,13 @@ function calculatePosition(position) {
         const type =
             position.querySelector(
                 ".diploma-type"
-            )?.value;
+            )?.value || "";
 
 
         const size =
             position.querySelector(
                 ".diploma-size"
-            )?.value;
+            )?.value || "";
 
 
         const quantity =
@@ -864,7 +991,7 @@ function calculatePosition(position) {
         const cupId =
             position.querySelector(
                 ".ready-cup"
-            )?.value;
+            )?.value || "";
 
 
         const quantity =
@@ -1038,10 +1165,12 @@ function calculatePosition(position) {
             ".sale-price"
         );
 
+
     const costElement =
         position.querySelector(
             ".cost-price"
         );
+
 
     const profitElement =
         position.querySelector(
@@ -1088,36 +1217,50 @@ function calculateAll() {
 
 
     let totalSale = 0;
-
     let totalCost = 0;
 
 
-    positions.forEach(position => {
+    positions.forEach(
+        position => {
 
-        calculatePosition(position);
+            calculatePosition(position);
 
 
-        const sale =
-            parseFloat(
+            const saleText =
                 position.querySelector(
                     ".sale-price"
-                )?.textContent
-            ) || 0;
+                )?.textContent || "0";
 
 
-        const cost =
-            parseFloat(
+            const costText =
                 position.querySelector(
                     ".cost-price"
-                )?.textContent
-            ) || 0;
+                )?.textContent || "0";
 
 
-        totalSale += sale;
+            const sale =
+                parseFloat(
+                    saleText.replace(
+                        ",",
+                        "."
+                    )
+                ) || 0;
 
-        totalCost += cost;
 
-    });
+            const cost =
+                parseFloat(
+                    costText.replace(
+                        ",",
+                        "."
+                    )
+                ) || 0;
+
+
+            totalSale += sale;
+            totalCost += cost;
+
+        }
+    );
 
 
     const totalProfit =
@@ -1129,10 +1272,12 @@ function calculateAll() {
             "totalSale"
         );
 
+
     const totalCostElement =
         document.getElementById(
             "totalCost"
         );
+
 
     const totalProfitElement =
         document.getElementById(
@@ -1190,9 +1335,7 @@ function clearOrder() {
 
 
     if (clientName) {
-
         clientName.value = "";
-
     }
 
 
@@ -1241,111 +1384,116 @@ function saveOrder() {
     const orderPositions = [];
 
 
-    positions.forEach(position => {
+    positions.forEach(
+        position => {
 
-        const category =
-            position.querySelector(
-                ".category"
-            )?.value || "";
+            const category =
+                position.querySelector(
+                    ".category"
+                )?.value || "";
 
 
-        if (!category) {
-            return;
+            if (!category) {
+                return;
+            }
+
+
+            const quantity =
+                Number(
+                    position.querySelector(
+                        ".quantity"
+                    )?.value
+                ) || 0;
+
+
+            const description =
+                position.querySelector(
+                    ".description"
+                )?.value || "";
+
+
+            const diplomaType =
+                position.querySelector(
+                    ".diploma-type"
+                )?.value || "";
+
+
+            const diplomaSize =
+                position.querySelector(
+                    ".diploma-size"
+                )?.value || "";
+
+
+            const readyCup =
+                position.querySelector(
+                    ".ready-cup"
+                )?.value || "";
+
+
+            const cupColor =
+                position.querySelector(
+                    ".cup-color"
+                )?.value || "";
+
+
+            const manualSale =
+                Number(
+                    position.querySelector(
+                        ".manual-sale"
+                    )?.value
+                ) || 0;
+
+
+            const manualCost =
+                Number(
+                    position.querySelector(
+                        ".manual-cost"
+                    )?.value
+                ) || 0;
+
+
+            orderPositions.push({
+
+                category,
+
+                quantity,
+
+                description,
+
+                diplomaType,
+
+                diplomaSize,
+
+                readyCup,
+
+                cupColor,
+
+                manualSale,
+
+                manualCost,
+
+                sale:
+                    position.querySelector(
+                        ".sale-price"
+                    )?.textContent ||
+                    "0 грн",
+
+                cost:
+                    position.querySelector(
+                        ".cost-price"
+                    )?.textContent ||
+                    "0 грн",
+
+                profit:
+                    position.querySelector(
+                        ".profit-price"
+                    )?.textContent ||
+                    "0 грн"
+
+            });
+
         }
-
-
-        const quantity =
-            Number(
-                position.querySelector(
-                    ".quantity"
-                )?.value
-            ) || 0;
-
-
-        const description =
-            position.querySelector(
-                ".description"
-            )?.value || "";
-
-
-        const diplomaType =
-            position.querySelector(
-                ".diploma-type"
-            )?.value || "";
-
-
-        const diplomaSize =
-            position.querySelector(
-                ".diploma-size"
-            )?.value || "";
-
-
-        const readyCup =
-            position.querySelector(
-                ".ready-cup"
-            )?.value || "";
-
-
-        const cupColor =
-            position.querySelector(
-                ".cup-color"
-            )?.value || "";
-
-
-        const manualSale =
-            Number(
-                position.querySelector(
-                    ".manual-sale"
-                )?.value
-            ) || 0;
-
-
-        const manualCost =
-            Number(
-                position.querySelector(
-                    ".manual-cost"
-                )?.value
-            ) || 0;
-
-
-        orderPositions.push({
-
-            category,
-
-            quantity,
-
-            description,
-
-            diplomaType,
-
-            diplomaSize,
-
-            readyCup,
-
-            cupColor,
-
-            manualSale,
-
-            manualCost,
-
-            sale:
-                position.querySelector(
-                    ".sale-price"
-                )?.textContent || "0 грн",
-
-            cost:
-                position.querySelector(
-                    ".cost-price"
-                )?.textContent || "0 грн",
-
-            profit:
-                position.querySelector(
-                    ".profit-price"
-                )?.textContent || "0 грн"
-
-        });
-
-    });
+    );
 
 
     if (
@@ -1362,7 +1510,8 @@ function saveOrder() {
 
     const order = {
 
-        id: Date.now(),
+        id:
+            Date.now(),
 
         date:
             new Date().toLocaleString(
@@ -1377,17 +1526,20 @@ function saveOrder() {
         totalSale:
             document.getElementById(
                 "totalSale"
-            )?.textContent || "0 грн",
+            )?.textContent ||
+            "0 грн",
 
         totalCost:
             document.getElementById(
                 "totalCost"
-            )?.textContent || "0 грн",
+            )?.textContent ||
+            "0 грн",
 
         totalProfit:
             document.getElementById(
                 "totalProfit"
-            )?.textContent || "0 грн"
+            )?.textContent ||
+            "0 грн"
 
     };
 
@@ -1440,27 +1592,35 @@ const catalogNames = {
 };
 
 
-const catalogTierNames = {
+/* В каталоге показываем 1–2 шт. одной строкой */
+const catalogTiers = [
 
-    "1":
-        "1–2 шт.",
+    {
+        key: "1",
+        label: "1–2 шт."
+    },
 
-    "2":
-        "2 шт.",
+    {
+        key: "3-10",
+        label: "3–10 шт."
+    },
 
-    "3-10":
-        "3–10 шт.",
+    {
+        key: "11-20",
+        label: "11–20 шт."
+    },
 
-    "11-20":
-        "11–20 шт.",
+    {
+        key: "21-50",
+        label: "21–50 шт."
+    },
 
-    "21-50":
-        "21–50 шт.",
+    {
+        key: "50+",
+        label: "50+ шт."
+    }
 
-    "50+":
-        "50+ шт."
-
-};
+];
 
 
 /* =========================================================
@@ -1494,7 +1654,7 @@ function addCatalogStyles() {
 
             position: fixed;
             inset: 0;
-            z-index: 9999;
+            z-index: 99999;
 
             background: #f5f5f7;
 
@@ -1504,6 +1664,8 @@ function addCatalogStyles() {
                 20px
                 16px
                 calc(100px + env(safe-area-inset-bottom));
+
+            -webkit-overflow-scrolling: touch;
 
         }
 
@@ -1596,14 +1758,27 @@ function addCatalogStyles() {
         }
 
 
-        .catalog-row {
+        .catalog-tier {
 
             display: grid;
 
             grid-template-columns:
-                1fr 1fr;
+                75px 1fr 1fr;
 
-            gap: 10px;
+            gap: 8px;
+
+            align-items: end;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .catalog-tier-name {
+
+            font-size: 13px;
+            color: #666;
+            padding-bottom: 11px;
 
         }
 
@@ -1641,27 +1816,13 @@ function addCatalogStyles() {
         }
 
 
-        .catalog-tier {
+        .catalog-row {
 
             display: grid;
 
-            grid-template-columns:
-                90px 1fr 1fr;
+            grid-template-columns: 1fr;
 
-            gap: 8px;
-
-            align-items: center;
-
-            margin-bottom: 8px;
-
-        }
-
-
-        .catalog-tier-name {
-
-            font-size: 13px;
-
-            color: #666;
+            gap: 10px;
 
         }
 
@@ -1753,11 +1914,14 @@ function openCatalog() {
                 "div"
             );
 
+
         screen.id =
             "catalogScreen";
 
+
         screen.className =
             "catalog-screen";
+
 
         document.body.appendChild(
             screen
@@ -1773,10 +1937,8 @@ function openCatalog() {
         "block";
 
 
-    window.scrollTo(
-        0,
-        0
-    );
+    document.body.style.overflow =
+        "hidden";
 
 }
 
@@ -1799,6 +1961,10 @@ function closeCatalog() {
             "none";
 
     }
+
+
+    document.body.style.overflow =
+        "";
 
 }
 
@@ -1827,6 +1993,7 @@ function renderCatalog() {
             <h2>Каталог</h2>
 
             <button
+                type="button"
                 class="catalog-close"
                 onclick="closeCatalog()"
             >
@@ -1854,11 +2021,16 @@ function renderCatalog() {
 
 
     Object.keys(
-        diplomaPrices
+        catalogNames
     ).forEach(key => {
 
         const product =
             diplomaPrices[key];
+
+
+        if (!product) {
+            return;
+        }
 
 
         html += `
@@ -1874,11 +2046,20 @@ function renderCatalog() {
         `;
 
 
-        Object.keys(product)
-            .forEach(tier => {
+        catalogTiers.forEach(
+            tierInfo => {
+
+                const tier =
+                    tierInfo.key;
+
 
                 const values =
                     product[tier];
+
+
+                if (!values) {
+                    return;
+                }
 
 
                 html += `
@@ -1887,7 +2068,7 @@ function renderCatalog() {
 
                         <div class="catalog-tier-name">
 
-                            ${catalogTierNames[tier] || tier}
+                            ${tierInfo.label}
 
                         </div>
 
@@ -1901,6 +2082,7 @@ function renderCatalog() {
                             <input
                                 type="number"
                                 min="0"
+                                step="1"
                                 data-diploma="${key}"
                                 data-tier="${tier}"
                                 data-type="sale"
@@ -1919,6 +2101,7 @@ function renderCatalog() {
                             <input
                                 type="number"
                                 min="0"
+                                step="1"
                                 data-diploma="${key}"
                                 data-tier="${tier}"
                                 data-type="cost"
@@ -1931,7 +2114,8 @@ function renderCatalog() {
 
                 `;
 
-            });
+            }
+        );
 
 
         html += `
@@ -1985,6 +2169,7 @@ function renderCatalog() {
                         <input
                             type="number"
                             min="0"
+                            step="1"
                             data-cup="${key}"
                             value="${cup.price}"
                         />
@@ -2008,6 +2193,7 @@ function renderCatalog() {
         <div class="catalog-actions">
 
             <button
+                type="button"
                 class="catalog-save"
                 onclick="saveCatalogFromScreen()"
             >
@@ -2016,6 +2202,7 @@ function renderCatalog() {
 
 
             <button
+                type="button"
                 class="catalog-reset"
                 onclick="resetCatalog()"
             >
@@ -2034,74 +2221,93 @@ function renderCatalog() {
 
 
 /* =========================================================
-   СОХРАНЕНИЕ КАТАЛОГА ИЗ ЭКРАНА
+   СОХРАНЕНИЕ ЦЕН ИЗ КАТАЛОГА
    ========================================================= */
 
 function saveCatalogFromScreen() {
 
     const diplomaInputs =
         document.querySelectorAll(
-            "[data-diploma]"
+            "#catalogScreen [data-diploma]"
         );
 
 
-    diplomaInputs.forEach(input => {
+    diplomaInputs.forEach(
+        input => {
 
-        const key =
-            input.dataset.diploma;
-
-        const tier =
-            input.dataset.tier;
-
-        const type =
-            input.dataset.type;
+            const key =
+                input.dataset.diploma;
 
 
-        const value =
-            Number(
-                input.value
-            ) || 0;
+            const tier =
+                input.dataset.tier;
 
 
-        if (
-            diplomaPrices[key] &&
-            diplomaPrices[key][tier]
-        ) {
+            const type =
+                input.dataset.type;
 
-            diplomaPrices[key][tier][type] =
-                value;
+
+            const value =
+                Number(
+                    input.value
+                ) || 0;
+
+
+            if (
+                diplomaPrices[key] &&
+                diplomaPrices[key][tier]
+            ) {
+
+                diplomaPrices[key][tier][type] =
+                    value;
+
+
+                /*
+                   Цена 1–2 шт. должна быть
+                   одинаковой для 1 и 2 шт.
+                */
+
+                if (tier === "1") {
+
+                    diplomaPrices[key]["2"][type] =
+                        value;
+
+                }
+
+            }
 
         }
-
-    });
+    );
 
 
     const cupInputs =
         document.querySelectorAll(
-            "[data-cup]"
+            "#catalogScreen [data-cup]"
         );
 
 
-    cupInputs.forEach(input => {
+    cupInputs.forEach(
+        input => {
 
-        const key =
-            input.dataset.cup;
-
-
-        const value =
-            Number(
-                input.value
-            ) || 0;
+            const key =
+                input.dataset.cup;
 
 
-        if (readyCups[key]) {
+            const value =
+                Number(
+                    input.value
+                ) || 0;
 
-            readyCups[key].price =
-                value;
+
+            if (readyCups[key]) {
+
+                readyCups[key].price =
+                    value;
+
+            }
 
         }
-
-    });
+    );
 
 
     saveCatalog();
@@ -2167,7 +2373,7 @@ function resetCatalog() {
 
 
 /* =========================================================
-   ПОДКЛЮЧЕНИЕ КНОПКИ «КАТАЛОГ»
+   КНОПКА КАТАЛОГА
    ========================================================= */
 
 function setupCatalogNavigation() {
@@ -2178,30 +2384,41 @@ function setupCatalogNavigation() {
         );
 
 
-    elements.forEach(element => {
+    elements.forEach(
+        element => {
 
-        const text =
-            element.textContent
-                .trim()
-                .toLowerCase();
+            const text =
+                element.textContent
+                    .trim()
+                    .toLowerCase();
 
 
-        if (
-            text === "каталог"
-        ) {
+            /*
+               Ищем "каталог" не только
+               при полном совпадении текста.
+            */
 
-            element.onclick =
-                function(event) {
+            if (
+                text.includes("каталог")
+            ) {
 
-                    event.preventDefault();
+                element.addEventListener(
+                    "click",
+                    function(event) {
 
-                    openCatalog();
+                        event.preventDefault();
+                        event.stopPropagation();
 
-                };
+                        openCatalog();
+
+                    },
+                    true
+                );
+
+            }
 
         }
-
-    });
+    );
 
 }
 
@@ -2211,8 +2428,7 @@ function setupCatalogNavigation() {
    ========================================================= */
 
 if (
-    "serviceWorker"
-    in navigator
+    "serviceWorker" in navigator
 ) {
 
     window.addEventListener(
@@ -2221,21 +2437,26 @@ if (
 
             navigator.serviceWorker
                 .register("./sw.js")
-                .then(() => {
+                .then(
+                    registration => {
 
-                    console.log(
-                        "PWA готово"
-                    );
+                        console.log(
+                            "PWA готово",
+                            registration
+                        );
 
-                })
-                .catch(error => {
+                    }
+                )
+                .catch(
+                    error => {
 
-                    console.log(
-                        "Ошибка PWA:",
-                        error
-                    );
+                        console.log(
+                            "Ошибка PWA:",
+                            error
+                        );
 
-                });
+                    }
+                );
 
         }
     );
