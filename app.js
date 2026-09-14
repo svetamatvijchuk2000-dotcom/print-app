@@ -9836,3 +9836,2739 @@ document.addEventListener(
         }
     }
 );
+
+// ============================================================
+// БОЛЬШОЕ ОБНОВЛЕНИЕ ЗАКАЗОВ
+//
+// 1. Клиент:
+//    - ФИО
+//    - телефон
+//    - канал продажи
+//    - канал связи
+//
+// 2. Редактирование:
+//    - одна кнопка "Сохранить изменения"
+//    - дата и время
+//    - статус заказа
+//    - статус оплаты
+//    - клиент
+//    - доставка / ТТН
+//    - позиции
+//
+// 3. Позиции:
+//    - Продажа всего
+//    - Себестоимость всего
+//    - программа сама считает цену за 1 шт.
+//
+// 4. Два режима цены:
+//    - автоматическая цена каталога
+//    - ручная общая сумма
+// ============================================================
+
+
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
+function safeNumber(value) {
+
+    const number =
+        Number(
+            String(value ?? "")
+                .replace(",", ".")
+        );
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+function moneyRound(value) {
+
+    return Math.round(
+        safeNumber(value) * 100
+    ) / 100;
+}
+
+
+function getPositionQuantity(card) {
+
+    const input =
+        card?.querySelector(
+            ".position-quantity"
+        );
+
+    const qty =
+        safeNumber(
+            input?.value
+        );
+
+    return qty > 0
+        ? qty
+        : 1;
+}
+
+
+function getEditPositionQuantity(card) {
+
+    const input =
+        card?.querySelector(
+            ".edit-quantity"
+        );
+
+    const qty =
+        safeNumber(
+            input?.value
+        );
+
+    return qty > 0
+        ? qty
+        : 1;
+}
+
+
+// ============================================================
+// КЛИЕНТ — НОВЫЙ ЗАКАЗ
+// ============================================================
+
+function addExtendedClientFieldsToNewOrder() {
+
+    const clientInput =
+        document.getElementById(
+            "clientName"
+        );
+
+    if (!clientInput) {
+        return;
+    }
+
+
+    if (
+        document.getElementById(
+            "extendedClientFields"
+        )
+    ) {
+        return;
+    }
+
+
+    // Если рядом есть label "Клиент",
+    // меняем его на ФИО
+
+    const field =
+        clientInput.closest(
+            ".field"
+        );
+
+
+    const label =
+        field?.querySelector(
+            "label"
+        );
+
+
+    if (label) {
+        label.textContent =
+            "ФИО клиента";
+    }
+
+
+    clientInput.placeholder =
+        "Имя и фамилия";
+
+
+    const block =
+        document.createElement(
+            "div"
+        );
+
+
+    block.id =
+        "extendedClientFields";
+
+
+    block.className =
+        "extended-client-fields";
+
+
+    block.innerHTML = `
+
+        <div class="field">
+
+            <label>
+                Номер телефона
+            </label>
+
+            <input
+                id="clientPhone"
+                type="tel"
+                inputmode="tel"
+                placeholder="+380..."
+                autocomplete="tel"
+            >
+
+        </div>
+
+
+        <div class="client-channel-grid">
+
+            <div class="field">
+
+                <label>
+                    Канал продажи
+                </label>
+
+                <select
+                    id="clientSalesChannel"
+                >
+                    <option value="">
+                        Не выбран
+                    </option>
+
+                    <option value="Сайт">
+                        Сайт
+                    </option>
+
+                    <option value="Instagram">
+                        Instagram
+                    </option>
+
+                    <option value="Другое">
+                        Другое
+                    </option>
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Канал связи
+                </label>
+
+                <select
+                    id="clientContactChannel"
+                >
+                    <option value="">
+                        Не выбран
+                    </option>
+
+                    <option value="Telegram">
+                        Telegram
+                    </option>
+
+                    <option value="Viber">
+                        Viber
+                    </option>
+
+                    <option value="WhatsApp">
+                        WhatsApp
+                    </option>
+                </select>
+
+            </div>
+
+        </div>
+    `;
+
+
+    field.insertAdjacentElement(
+        "afterend",
+        block
+    );
+}
+
+
+
+// ============================================================
+// СОХРАНЕНИЕ РАСШИРЕННЫХ ДАННЫХ КЛИЕНТА
+// ПРИ СОЗДАНИИ НОВОГО ЗАКАЗА
+// ============================================================
+
+const _saveOrderExtendedClient =
+    saveOrder;
+
+
+saveOrder = function () {
+
+    const clientPhone =
+        document.getElementById(
+            "clientPhone"
+        )?.value.trim() || "";
+
+
+    const salesChannel =
+        document.getElementById(
+            "clientSalesChannel"
+        )?.value || "";
+
+
+    const contactChannel =
+        document.getElementById(
+            "clientContactChannel"
+        )?.value || "";
+
+
+    // Запоминаем количество заказов до сохранения
+
+    const beforeOrders =
+        getOrders();
+
+
+    const beforeIds =
+        new Set(
+            beforeOrders.map(
+                order =>
+                    String(order.id)
+            )
+        );
+
+
+    // Сохраняем обычным существующим способом
+
+    _saveOrderExtendedClient();
+
+
+    // Находим только что созданный заказ
+
+    const orders =
+        getOrders();
+
+
+    let createdOrder =
+        orders.find(
+            order =>
+                !beforeIds.has(
+                    String(order.id)
+                )
+        );
+
+
+    // Если не нашли по ID —
+    // берём самый новый
+
+    if (!createdOrder) {
+
+        createdOrder =
+            [...orders]
+                .sort(
+                    (a, b) =>
+                        Number(b.id || 0) -
+                        Number(a.id || 0)
+                )[0];
+    }
+
+
+    if (createdOrder) {
+
+        createdOrder.clientPhone =
+            clientPhone;
+
+        createdOrder.salesChannel =
+            salesChannel;
+
+        createdOrder.contactChannel =
+            contactChannel;
+
+
+        saveOrders(
+            orders
+        );
+    }
+
+
+    // Очищаем дополнительные поля
+
+    const phone =
+        document.getElementById(
+            "clientPhone"
+        );
+
+    const sale =
+        document.getElementById(
+            "clientSalesChannel"
+        );
+
+    const contact =
+        document.getElementById(
+            "clientContactChannel"
+        );
+
+
+    if (phone) {
+        phone.value = "";
+    }
+
+    if (sale) {
+        sale.value = "";
+    }
+
+    if (contact) {
+        contact.value = "";
+    }
+
+
+    if (
+        typeof renderOrderCards ===
+        "function"
+    ) {
+        renderOrderCards();
+    }
+};
+
+
+
+// ============================================================
+// ОБЩАЯ СУММА ПОЗИЦИИ — НОВЫЙ ЗАКАЗ
+// ============================================================
+
+function enhanceNewOrderPositionCard(
+    card
+) {
+
+    if (!card) {
+        return;
+    }
+
+
+    if (
+        card.dataset.totalFieldsReady ===
+        "1"
+    ) {
+        return;
+    }
+
+
+    const saleInput =
+        card.querySelector(
+            ".position-sale"
+        );
+
+
+    const costInput =
+        card.querySelector(
+            ".position-cost"
+        );
+
+
+    if (
+        !saleInput ||
+        !costInput
+    ) {
+        return;
+    }
+
+
+    card.dataset.totalFieldsReady =
+        "1";
+
+
+    // Старые поля цены за единицу
+    // оставляем для логики приложения,
+    // но прячем визуально
+
+    const saleField =
+        saleInput.closest(
+            ".field"
+        );
+
+
+    const costField =
+        costInput.closest(
+            ".field"
+        );
+
+
+    if (saleField) {
+
+        saleField.classList.add(
+            "internal-unit-price-field"
+        );
+    }
+
+
+    if (costField) {
+
+        costField.classList.add(
+            "internal-unit-price-field"
+        );
+    }
+
+
+    const totalBlock =
+        document.createElement(
+            "div"
+        );
+
+
+    totalBlock.className =
+        "position-total-inputs";
+
+
+    totalBlock.innerHTML = `
+
+        <div class="field">
+
+            <label>
+                Продажа всего
+            </label>
+
+            <input
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                class="position-sale-total-input"
+                placeholder="0"
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label>
+                Себестоимость всего
+            </label>
+
+            <input
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                class="position-cost-total-input"
+                placeholder="0"
+            >
+
+        </div>
+
+
+        <div class="position-unit-info">
+
+            <span>
+                Цена 1 шт.:
+                <b class="position-unit-sale-info">
+                    0 грн
+                </b>
+            </span>
+
+            <span>
+                Себест. 1 шт.:
+                <b class="position-unit-cost-info">
+                    0 грн
+                </b>
+            </span>
+
+        </div>
+    `;
+
+
+    const manualPrices =
+        card.querySelector(
+            ".manual-prices"
+        );
+
+
+    if (manualPrices) {
+
+        manualPrices.insertAdjacentElement(
+            "afterend",
+            totalBlock
+        );
+
+    } else {
+
+        const positionTotal =
+            card.querySelector(
+                ".position-total"
+            );
+
+
+        if (positionTotal) {
+
+            positionTotal.insertAdjacentElement(
+                "beforebegin",
+                totalBlock
+            );
+
+        } else {
+
+            card.appendChild(
+                totalBlock
+            );
+        }
+    }
+
+
+    syncPositionTotalsFromUnitPrices(
+        card
+    );
+}
+
+
+
+// ============================================================
+// ЦЕНА ЗА ШТУКУ -> ОБЩАЯ СУММА
+// ============================================================
+
+function syncPositionTotalsFromUnitPrices(
+    card,
+    force = false
+) {
+
+    if (!card) {
+        return;
+    }
+
+
+    const quantity =
+        getPositionQuantity(
+            card
+        );
+
+
+    const saleUnit =
+        safeNumber(
+            card.querySelector(
+                ".position-sale"
+            )?.value
+        );
+
+
+    const costUnit =
+        safeNumber(
+            card.querySelector(
+                ".position-cost"
+            )?.value
+        );
+
+
+    const saleTotalInput =
+        card.querySelector(
+            ".position-sale-total-input"
+        );
+
+
+    const costTotalInput =
+        card.querySelector(
+            ".position-cost-total-input"
+        );
+
+
+    // Если пользователь вручную изменил общую сумму,
+    // автоматический каталог её больше не перетирает.
+    // force=true используется при выборе нового товара.
+
+    if (
+        saleTotalInput &&
+        (
+            force ||
+            saleTotalInput.dataset.manual !==
+                "1"
+        )
+    ) {
+
+        saleTotalInput.value =
+            moneyRound(
+                saleUnit *
+                quantity
+            );
+    }
+
+
+    if (
+        costTotalInput &&
+        (
+            force ||
+            costTotalInput.dataset.manual !==
+                "1"
+        )
+    ) {
+
+        costTotalInput.value =
+            moneyRound(
+                costUnit *
+                quantity
+            );
+    }
+
+
+    updatePositionUnitInfo(
+        card
+    );
+}
+
+
+
+// ============================================================
+// ОБЩАЯ СУММА -> ЦЕНА ЗА 1 ШТ.
+// ============================================================
+
+function syncPositionUnitPricesFromTotals(
+    card
+) {
+
+    if (!card) {
+        return;
+    }
+
+
+    const quantity =
+        getPositionQuantity(
+            card
+        );
+
+
+    const totalSale =
+        safeNumber(
+            card.querySelector(
+                ".position-sale-total-input"
+            )?.value
+        );
+
+
+    const totalCost =
+        safeNumber(
+            card.querySelector(
+                ".position-cost-total-input"
+            )?.value
+        );
+
+
+    const saleUnitInput =
+        card.querySelector(
+            ".position-sale"
+        );
+
+
+    const costUnitInput =
+        card.querySelector(
+            ".position-cost"
+        );
+
+
+    if (saleUnitInput) {
+
+        saleUnitInput.value =
+            moneyRound(
+                totalSale /
+                quantity
+            );
+    }
+
+
+    if (costUnitInput) {
+
+        costUnitInput.value =
+            moneyRound(
+                totalCost /
+                quantity
+            );
+    }
+
+
+    updatePositionUnitInfo(
+        card
+    );
+
+
+    calculateAll();
+}
+
+
+
+// ============================================================
+// ПОКАЗЫВАЕМ ЦЕНУ ЗА 1 ШТ.
+// ============================================================
+
+function updatePositionUnitInfo(
+    card
+) {
+
+    if (!card) {
+        return;
+    }
+
+
+    const sale =
+        safeNumber(
+            card.querySelector(
+                ".position-sale"
+            )?.value
+        );
+
+
+    const cost =
+        safeNumber(
+            card.querySelector(
+                ".position-cost"
+            )?.value
+        );
+
+
+    const saleInfo =
+        card.querySelector(
+            ".position-unit-sale-info"
+        );
+
+
+    const costInfo =
+        card.querySelector(
+            ".position-unit-cost-info"
+        );
+
+
+    if (saleInfo) {
+
+        saleInfo.textContent =
+            `${moneyRound(sale)} грн`;
+    }
+
+
+    if (costInfo) {
+
+        costInfo.textContent =
+            `${moneyRound(cost)} грн`;
+    }
+}
+
+
+
+// ============================================================
+// ВСЕ ПОЗИЦИИ НОВОГО ЗАКАЗА
+// ============================================================
+
+function enhanceAllNewOrderPositions() {
+
+    document
+        .querySelectorAll(
+            "#positions .position-card"
+        )
+        .forEach(
+            enhanceNewOrderPositionCard
+        );
+}
+
+
+
+// ============================================================
+// ПОСЛЕ ДОБАВЛЕНИЯ НОВОЙ ПОЗИЦИИ
+// ============================================================
+
+const _addPositionTotalMode =
+    addPosition;
+
+
+addPosition = function () {
+
+    _addPositionTotalMode();
+
+
+    setTimeout(
+        () => {
+
+            enhanceAllNewOrderPositions();
+
+        },
+        0
+    );
+};
+
+
+
+// ============================================================
+// ЕСЛИ ВЫБРАЛИ ТОВАР / ДИПЛОМ
+// ОБНОВЛЯЕМ ОБЩУЮ СУММУ
+// ============================================================
+
+const _updateDiplomaTotalMode =
+    updateDiploma;
+
+
+updateDiploma = function (
+    productSelect
+) {
+
+    _updateDiplomaTotalMode(
+        productSelect
+    );
+
+
+    const card =
+        productSelect?.closest(
+            ".position-card"
+        );
+
+
+    if (!card) {
+        return;
+    }
+
+
+    // При выборе нового товара
+    // сбрасываем ручной режим
+
+    const saleTotal =
+        card.querySelector(
+            ".position-sale-total-input"
+        );
+
+
+    const costTotal =
+        card.querySelector(
+            ".position-cost-total-input"
+        );
+
+
+    if (saleTotal) {
+
+        saleTotal.dataset.manual =
+            "0";
+    }
+
+
+    if (costTotal) {
+
+        costTotal.dataset.manual =
+            "0";
+    }
+
+
+    setTimeout(
+        () => {
+
+            syncPositionTotalsFromUnitPrices(
+                card,
+                true
+            );
+
+        },
+        0
+    );
+};
+
+
+
+// ============================================================
+// ИЗМЕНЕНИЕ КОЛИЧЕСТВА
+//
+// Вариант 1:
+// общая сумма вручную НЕ вводилась
+// -> пересчитываем цену каталога и итог
+//
+// Вариант 2:
+// общая сумма введена вручную
+// -> сохраняем общую сумму и делим её на новое количество
+// ============================================================
+
+document.addEventListener(
+    "input",
+    event => {
+
+        const quantityInput =
+            event.target.closest(
+                "#positions .position-quantity"
+            );
+
+
+        if (!quantityInput) {
+            return;
+        }
+
+
+        const card =
+            quantityInput.closest(
+                ".position-card"
+            );
+
+
+        if (!card) {
+            return;
+        }
+
+
+        const saleTotal =
+            card.querySelector(
+                ".position-sale-total-input"
+            );
+
+
+        const costTotal =
+            card.querySelector(
+                ".position-cost-total-input"
+            );
+
+
+        const manualSale =
+            saleTotal?.dataset.manual ===
+            "1";
+
+
+        const manualCost =
+            costTotal?.dataset.manual ===
+            "1";
+
+
+        const productSelect =
+            card.querySelector(
+                ".position-product"
+            );
+
+
+        const category =
+            card.querySelector(
+                ".position-category"
+            )?.value;
+
+
+        // Если общая сумма введена вручную,
+        // делим её на новое количество
+
+        if (
+            manualSale ||
+            manualCost
+        ) {
+
+            syncPositionUnitPricesFromTotals(
+                card
+            );
+
+            return;
+        }
+
+
+        // Для дипломов пересчитываем
+        // цену каталога по количеству
+
+        if (
+            category === "diploma" &&
+            productSelect?.value
+        ) {
+
+            _updateDiplomaTotalMode(
+                productSelect
+            );
+        }
+
+
+        setTimeout(
+            () => {
+
+                syncPositionTotalsFromUnitPrices(
+                    card,
+                    true
+                );
+
+                calculateAll();
+
+            },
+            0
+        );
+    }
+);
+
+
+
+// ============================================================
+// РУЧНОЙ ВВОД ОБЩЕЙ ПРОДАЖИ
+// ============================================================
+
+document.addEventListener(
+    "input",
+    event => {
+
+        const input =
+            event.target.closest(
+                ".position-sale-total-input"
+            );
+
+
+        if (!input) {
+            return;
+        }
+
+
+        input.dataset.manual =
+            "1";
+
+
+        const card =
+            input.closest(
+                ".position-card"
+            );
+
+
+        syncPositionUnitPricesFromTotals(
+            card
+        );
+    }
+);
+
+
+
+// ============================================================
+// РУЧНОЙ ВВОД ОБЩЕЙ СЕБЕСТОИМОСТИ
+// ============================================================
+
+document.addEventListener(
+    "input",
+    event => {
+
+        const input =
+            event.target.closest(
+                ".position-cost-total-input"
+            );
+
+
+        if (!input) {
+            return;
+        }
+
+
+        input.dataset.manual =
+            "1";
+
+
+        const card =
+            input.closest(
+                ".position-card"
+            );
+
+
+        syncPositionUnitPricesFromTotals(
+            card
+        );
+    }
+);
+
+
+
+// ============================================================
+// ИЗМЕНИЛИ КАТЕГОРИЮ
+// СБРАСЫВАЕМ РУЧНОЙ РЕЖИМ
+// ============================================================
+
+document.addEventListener(
+    "change",
+    event => {
+
+        const select =
+            event.target.closest(
+                "#positions .position-category"
+            );
+
+
+        if (!select) {
+            return;
+        }
+
+
+        const card =
+            select.closest(
+                ".position-card"
+            );
+
+
+        if (!card) {
+            return;
+        }
+
+
+        const saleTotal =
+            card.querySelector(
+                ".position-sale-total-input"
+            );
+
+
+        const costTotal =
+            card.querySelector(
+                ".position-cost-total-input"
+            );
+
+
+        if (saleTotal) {
+            saleTotal.dataset.manual =
+                "0";
+        }
+
+
+        if (costTotal) {
+            costTotal.dataset.manual =
+                "0";
+        }
+
+
+        setTimeout(
+            () => {
+
+                syncPositionTotalsFromUnitPrices(
+                    card,
+                    true
+                );
+
+            },
+            0
+        );
+    }
+);
+
+
+
+// ============================================================
+// РЕДАКТИРОВАНИЕ ЗАКАЗА
+// ДОБАВЛЯЕМ ВСЕ ДАННЫЕ В ОДИН РЕДАКТОР
+// ============================================================
+
+const _renderOrderEditorUnified =
+    renderOrderEditor;
+
+
+renderOrderEditor = function (
+    order
+) {
+
+    _renderOrderEditorUnified(
+        order
+    );
+
+
+    setTimeout(
+        () => {
+
+            addUnifiedOrderEditFields(
+                order
+            );
+
+            enhanceEditPositionCards();
+
+            cleanupExtraSaveButtons();
+
+        },
+        0
+    );
+};
+
+
+
+// ============================================================
+// ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ РЕДАКТИРОВАНИЯ
+// ============================================================
+
+function addUnifiedOrderEditFields(
+    order
+) {
+
+    const content =
+        document.querySelector(
+            "#orderModal .order-modal-content"
+        );
+
+
+    if (!content) {
+        return;
+    }
+
+
+    if (
+        document.getElementById(
+            "unifiedOrderEditFields"
+        )
+    ) {
+        return;
+    }
+
+
+    const firstBlock =
+        content.querySelector(
+            ".order-detail-block"
+        );
+
+
+    if (!firstBlock) {
+        return;
+    }
+
+
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+
+    wrapper.id =
+        "unifiedOrderEditFields";
+
+
+    wrapper.className =
+        "order-detail-block";
+
+
+    const currentDate =
+        orderDateToInputValue(
+            order.createdAt
+        );
+
+
+    const currentTime =
+        orderTimeToInputValue(
+            order.createdAt
+        );
+
+
+    wrapper.innerHTML = `
+
+        <div class="detail-section-title">
+            Клиент и заказ
+        </div>
+
+
+        <div class="field">
+
+            <label>
+                Номер телефона
+            </label>
+
+            <input
+                id="editClientPhone"
+                type="tel"
+                value="${escapeHtml(
+                    order.clientPhone ||
+                    ""
+                )}"
+                placeholder="+380..."
+            >
+
+        </div>
+
+
+        <div class="edit-two-columns">
+
+            <div class="field">
+
+                <label>
+                    Канал продажи
+                </label>
+
+                <select
+                    id="editSalesChannel"
+                >
+
+                    <option
+                        value=""
+                        ${
+                            !order.salesChannel
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Не выбран
+                    </option>
+
+                    <option
+                        value="Сайт"
+                        ${
+                            order.salesChannel ===
+                            "Сайт"
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Сайт
+                    </option>
+
+                    <option
+                        value="Instagram"
+                        ${
+                            order.salesChannel ===
+                            "Instagram"
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Instagram
+                    </option>
+
+                    <option
+                        value="Другое"
+                        ${
+                            order.salesChannel ===
+                            "Другое"
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Другое
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Канал связи
+                </label>
+
+                <select
+                    id="editContactChannel"
+                >
+
+                    <option
+                        value=""
+                        ${
+                            !order.contactChannel
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Не выбран
+                    </option>
+
+                    <option
+                        value="Telegram"
+                        ${
+                            order.contactChannel ===
+                            "Telegram"
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Telegram
+                    </option>
+
+                    <option
+                        value="Viber"
+                        ${
+                            order.contactChannel ===
+                            "Viber"
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        Viber
+                    </option>
+
+                    <option
+                        value="WhatsApp"
+                        ${
+                            order.contactChannel ===
+                            "WhatsApp"
+                            ? "selected"
+                            : ""
+                        }
+                    >
+                        WhatsApp
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <div class="edit-two-columns">
+
+            <div class="field">
+
+                <label>
+                    Дата заказа
+                </label>
+
+                <input
+                    id="editUnifiedOrderDate"
+                    type="date"
+                    value="${currentDate}"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Время
+                </label>
+
+                <input
+                    id="editUnifiedOrderTime"
+                    type="time"
+                    value="${currentTime}"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="edit-two-columns">
+
+            <div class="field">
+
+                <label>
+                    Статус заказа
+                </label>
+
+                <select
+                    id="editUnifiedOrderStatus"
+                >
+
+                    ${makeUnifiedOrderStatusOptions(
+                        order.status
+                    )}
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Статус оплаты
+                </label>
+
+                <select
+                    id="editUnifiedPaymentStatus"
+                >
+
+                    ${makeUnifiedPaymentStatusOptions(
+                        order.paymentStatus
+                    )}
+
+                </select>
+
+            </div>
+
+        </div>
+    `;
+
+
+    firstBlock.insertAdjacentElement(
+        "afterend",
+        wrapper
+    );
+}
+
+
+
+// ============================================================
+// OPTIONS СТАТУСА ЗАКАЗА
+// ============================================================
+
+function makeUnifiedOrderStatusOptions(
+    selected
+) {
+
+    const statuses = [
+        "Новый",
+        "В работе",
+        "Готов",
+        "Выдан",
+        "Отменён"
+    ];
+
+
+    return statuses
+        .map(
+            value => `
+
+                <option
+                    value="${value}"
+                    ${
+                        value === selected
+                        ? "selected"
+                        : ""
+                    }
+                >
+                    ${value}
+                </option>
+
+            `
+        )
+        .join("");
+}
+
+
+
+// ============================================================
+// OPTIONS ОПЛАТЫ
+// ============================================================
+
+function makeUnifiedPaymentStatusOptions(
+    selected
+) {
+
+    const statuses = [
+        "Не оплачено",
+        "Частичная предоплата",
+        "Оплачено"
+    ];
+
+
+    return statuses
+        .map(
+            value => `
+
+                <option
+                    value="${value}"
+                    ${
+                        value === selected
+                        ? "selected"
+                        : ""
+                    }
+                >
+                    ${value}
+                </option>
+
+            `
+        )
+        .join("");
+}
+
+
+
+// ============================================================
+// УБИРАЕМ ЛИШНИЕ КНОПКИ "СОХРАНИТЬ"
+// ВНУТРИ РЕДАКТОРА
+// ОСТАВЛЯЕМ ГЛАВНУЮ КНОПКУ СОХРАНЕНИЯ
+// ============================================================
+
+function cleanupExtraSaveButtons() {
+
+    const content =
+        document.querySelector(
+            "#orderModal .order-modal-content"
+        );
+
+
+    if (!content) {
+        return;
+    }
+
+
+    const buttons =
+        Array.from(
+            content.querySelectorAll(
+                "button"
+            )
+        );
+
+
+    buttons.forEach(
+        button => {
+
+            const text =
+                String(
+                    button.textContent ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+
+            // Не трогаем главную кнопку
+            // saveEditedOrder
+
+            const onclick =
+                button.getAttribute(
+                    "onclick"
+                ) || "";
+
+
+            if (
+                onclick.includes(
+                    "saveEditedOrder"
+                )
+            ) {
+                return;
+            }
+
+
+            if (
+                text ===
+                    "сохранить доставку"
+                ||
+                text ===
+                    "сохранить дату"
+            ) {
+
+                button.style.display =
+                    "none";
+            }
+        }
+    );
+
+
+    // Переименовываем главную кнопку
+
+    buttons.forEach(
+        button => {
+
+            const onclick =
+                button.getAttribute(
+                    "onclick"
+                ) || "";
+
+
+            if (
+                onclick.includes(
+                    "saveEditedOrder"
+                )
+            ) {
+
+                button.textContent =
+                    "Сохранить изменения";
+
+                button.classList.add(
+                    "unified-save-button"
+                );
+            }
+        }
+    );
+}
+
+
+
+// ============================================================
+// ПОЗИЦИИ В РЕДАКТИРОВАНИИ
+// ОБЩАЯ ПРОДАЖА / ОБЩАЯ СЕБЕСТОИМОСТЬ
+// ============================================================
+
+function enhanceEditPositionCards() {
+
+    document
+        .querySelectorAll(
+            "#editOrderPositions [data-edit-position]"
+        )
+        .forEach(
+            card => {
+
+                if (
+                    card.dataset
+                        .editTotalFieldsReady ===
+                    "1"
+                ) {
+                    return;
+                }
+
+
+                const saleInput =
+                    card.querySelector(
+                        ".edit-sale"
+                    );
+
+
+                const costInput =
+                    card.querySelector(
+                        ".edit-cost"
+                    );
+
+
+                if (
+                    !saleInput ||
+                    !costInput
+                ) {
+                    return;
+                }
+
+
+                card.dataset
+                    .editTotalFieldsReady =
+                    "1";
+
+
+                const saleField =
+                    saleInput.closest(
+                        ".field"
+                    );
+
+
+                const costField =
+                    costInput.closest(
+                        ".field"
+                    );
+
+
+                saleField?.classList.add(
+                    "internal-unit-price-field"
+                );
+
+
+                costField?.classList.add(
+                    "internal-unit-price-field"
+                );
+
+
+                const quantity =
+                    getEditPositionQuantity(
+                        card
+                    );
+
+
+                const totalSale =
+                    moneyRound(
+                        safeNumber(
+                            saleInput.value
+                        ) *
+                        quantity
+                    );
+
+
+                const totalCost =
+                    moneyRound(
+                        safeNumber(
+                            costInput.value
+                        ) *
+                        quantity
+                    );
+
+
+                const block =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                block.className =
+                    "edit-position-total-inputs";
+
+
+                block.innerHTML = `
+
+                    <div class="field">
+
+                        <label>
+                            Продажа всего
+                        </label>
+
+                        <input
+                            type="number"
+                            inputmode="decimal"
+                            min="0"
+                            step="0.01"
+                            class="edit-sale-total-input"
+                            value="${totalSale}"
+                        >
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label>
+                            Себестоимость всего
+                        </label>
+
+                        <input
+                            type="number"
+                            inputmode="decimal"
+                            min="0"
+                            step="0.01"
+                            class="edit-cost-total-input"
+                            value="${totalCost}"
+                        >
+
+                    </div>
+
+
+                    <div class="position-unit-info">
+
+                        <span>
+                            Цена 1 шт.:
+                            <b class="edit-unit-sale-info">
+                                ${moneyRound(
+                                    saleInput.value
+                                )} грн
+                            </b>
+                        </span>
+
+                        <span>
+                            Себест. 1 шт.:
+                            <b class="edit-unit-cost-info">
+                                ${moneyRound(
+                                    costInput.value
+                                )} грн
+                            </b>
+                        </span>
+
+                    </div>
+                `;
+
+
+                const positionTotal =
+                    card.querySelector(
+                        ".edit-position-total, .position-total"
+                    );
+
+
+                if (positionTotal) {
+
+                    positionTotal
+                        .insertAdjacentElement(
+                            "beforebegin",
+                            block
+                        );
+
+                } else {
+
+                    card.appendChild(
+                        block
+                    );
+                }
+            }
+        );
+}
+
+
+
+// ============================================================
+// РЕДАКТИРОВАНИЕ:
+// ОБЩАЯ СУММА -> ЦЕНА ЗА 1 ШТ.
+// ============================================================
+
+function syncEditUnitPricesFromTotals(
+    card
+) {
+
+    if (!card) {
+        return;
+    }
+
+
+    const quantity =
+        getEditPositionQuantity(
+            card
+        );
+
+
+    const totalSale =
+        safeNumber(
+            card.querySelector(
+                ".edit-sale-total-input"
+            )?.value
+        );
+
+
+    const totalCost =
+        safeNumber(
+            card.querySelector(
+                ".edit-cost-total-input"
+            )?.value
+        );
+
+
+    const saleInput =
+        card.querySelector(
+            ".edit-sale"
+        );
+
+
+    const costInput =
+        card.querySelector(
+            ".edit-cost"
+        );
+
+
+    const saleUnit =
+        moneyRound(
+            totalSale /
+            quantity
+        );
+
+
+    const costUnit =
+        moneyRound(
+            totalCost /
+            quantity
+        );
+
+
+    if (saleInput) {
+        saleInput.value =
+            saleUnit;
+    }
+
+
+    if (costInput) {
+        costInput.value =
+            costUnit;
+    }
+
+
+    const saleInfo =
+        card.querySelector(
+            ".edit-unit-sale-info"
+        );
+
+
+    const costInfo =
+        card.querySelector(
+            ".edit-unit-cost-info"
+        );
+
+
+    if (saleInfo) {
+
+        saleInfo.textContent =
+            `${saleUnit} грн`;
+    }
+
+
+    if (costInfo) {
+
+        costInfo.textContent =
+            `${costUnit} грн`;
+    }
+}
+
+
+
+// ============================================================
+// РУЧНОЕ ИЗМЕНЕНИЕ ОБЩЕЙ СУММЫ В РЕДАКТОРЕ
+// ============================================================
+
+document.addEventListener(
+    "input",
+    event => {
+
+        if (
+            !event.target.matches(
+                ".edit-sale-total-input, .edit-cost-total-input"
+            )
+        ) {
+            return;
+        }
+
+
+        const card =
+            event.target.closest(
+                "[data-edit-position]"
+            );
+
+
+        syncEditUnitPricesFromTotals(
+            card
+        );
+    }
+);
+
+
+
+// ============================================================
+// ИЗМЕНЕНИЕ КОЛИЧЕСТВА В РЕДАКТОРЕ
+// ОБЩАЯ СУММА ОСТАЁТСЯ ТА ЖЕ,
+// ЦЕНА ЗА ШТ. ПЕРЕСЧИТЫВАЕТСЯ
+// ============================================================
+
+document.addEventListener(
+    "input",
+    event => {
+
+        if (
+            !event.target.matches(
+                "#editOrderPositions .edit-quantity"
+            )
+        ) {
+            return;
+        }
+
+
+        const card =
+            event.target.closest(
+                "[data-edit-position]"
+            );
+
+
+        syncEditUnitPricesFromTotals(
+            card
+        );
+    }
+);
+
+
+
+// ============================================================
+// СОХРАНЕНИЕ ВСЕХ ИЗМЕНЕНИЙ ОДНОЙ КНОПКОЙ
+// ============================================================
+
+const _saveEditedOrderUnified =
+    saveEditedOrder;
+
+
+saveEditedOrder = function (
+    id
+) {
+
+    // До вызова старого сохранения
+    // забираем все дополнительные данные,
+    // потому что старый код может перерисовать окно.
+
+    const phone =
+        document.getElementById(
+            "editClientPhone"
+        )?.value.trim() || "";
+
+
+    const salesChannel =
+        document.getElementById(
+            "editSalesChannel"
+        )?.value || "";
+
+
+    const contactChannel =
+        document.getElementById(
+            "editContactChannel"
+        )?.value || "";
+
+
+    const status =
+        document.getElementById(
+            "editUnifiedOrderStatus"
+        )?.value || "";
+
+
+    const paymentStatus =
+        document.getElementById(
+            "editUnifiedPaymentStatus"
+        )?.value || "";
+
+
+    const dateValue =
+        document.getElementById(
+            "editUnifiedOrderDate"
+        )?.value || "";
+
+
+    const timeValue =
+        document.getElementById(
+            "editUnifiedOrderTime"
+        )?.value || "00:00";
+
+
+    // Перед стандартным сохранением
+    // синхронизируем общие суммы
+    // с внутренними ценами за 1 шт.
+
+    document
+        .querySelectorAll(
+            "#editOrderPositions [data-edit-position]"
+        )
+        .forEach(
+            syncEditUnitPricesFromTotals
+        );
+
+
+    // Стандартное сохранение:
+    // клиент, позиции, доставка и т.д.
+
+    _saveEditedOrderUnified(
+        id
+    );
+
+
+    // Получаем заказ после стандартного сохранения
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                Number(item.id) ===
+                Number(id)
+        );
+
+
+    if (!order) {
+        return;
+    }
+
+
+    order.clientPhone =
+        phone;
+
+
+    order.salesChannel =
+        salesChannel;
+
+
+    order.contactChannel =
+        contactChannel;
+
+
+    if (status) {
+        order.status =
+            status;
+    }
+
+
+    if (paymentStatus) {
+        order.paymentStatus =
+            paymentStatus;
+    }
+
+
+    if (dateValue) {
+
+        const date =
+            new Date(
+                `${dateValue}T${timeValue}:00`
+            );
+
+
+        if (
+            !Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            order.createdAt =
+                date.getTime();
+        }
+    }
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderOrderDetails(
+        order
+    );
+
+
+    renderOrderCards();
+};
+
+
+
+// ============================================================
+// ПОКАЗЫВАЕМ ДАННЫЕ КЛИЕНТА
+// В ОТКРЫТОМ ЗАКАЗЕ
+// ============================================================
+
+function addClientInformationToOrderDetails(
+    order
+) {
+
+    const content =
+        document.querySelector(
+            "#orderModal .order-modal-content"
+        );
+
+
+    if (!content) {
+        return;
+    }
+
+
+    if (
+        document.getElementById(
+            "orderClientExtraInformation"
+        )
+    ) {
+        return;
+    }
+
+
+    if (
+        !order.clientPhone &&
+        !order.salesChannel &&
+        !order.contactChannel
+    ) {
+        return;
+    }
+
+
+    const firstBlock =
+        content.querySelector(
+            ".order-detail-block"
+        );
+
+
+    if (!firstBlock) {
+        return;
+    }
+
+
+    const info =
+        document.createElement(
+            "div"
+        );
+
+
+    info.id =
+        "orderClientExtraInformation";
+
+
+    info.className =
+        "order-client-extra-info";
+
+
+    info.innerHTML = `
+
+        ${
+            order.clientPhone
+            ? `
+                <div>
+                    📞
+                    <b>Телефон:</b>
+                    ${escapeHtml(
+                        order.clientPhone
+                    )}
+                </div>
+            `
+            : ""
+        }
+
+
+        ${
+            order.salesChannel
+            ? `
+                <div>
+                    🛒
+                    <b>Канал продажи:</b>
+                    ${escapeHtml(
+                        order.salesChannel
+                    )}
+                </div>
+            `
+            : ""
+        }
+
+
+        ${
+            order.contactChannel
+            ? `
+                <div>
+                    💬
+                    <b>Связь:</b>
+                    ${escapeHtml(
+                        order.contactChannel
+                    )}
+                </div>
+            `
+            : ""
+        }
+    `;
+
+
+    firstBlock.appendChild(
+        info
+    );
+}
+
+
+
+// ============================================================
+// ДОБАВЛЯЕМ ИНФОРМАЦИЮ В ПРОСМОТР ЗАКАЗА
+// ============================================================
+
+const _renderOrderDetailsClientInfo =
+    renderOrderDetails;
+
+
+renderOrderDetails = function (
+    order
+) {
+
+    _renderOrderDetailsClientInfo(
+        order
+    );
+
+
+    addClientInformationToOrderDetails(
+        order
+    );
+
+
+    // Убираем отдельные кнопки
+    // "Сохранить доставку"
+    // "Сохранить дату"
+
+    document
+        .querySelectorAll(
+            "#orderModal button"
+        )
+        .forEach(
+            button => {
+
+                const text =
+                    String(
+                        button.textContent ||
+                        ""
+                    )
+                    .trim()
+                    .toLowerCase();
+
+
+                if (
+                    text ===
+                        "сохранить доставку"
+                    ||
+                    text ===
+                        "сохранить дату"
+                ) {
+
+                    button.style.display =
+                        "none";
+                }
+            }
+        );
+};
+
+
+
+// ============================================================
+// СТИЛИ
+// ============================================================
+
+function addExtendedOrderStyles() {
+
+    if (
+        document.getElementById(
+            "extendedOrderStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "extendedOrderStyles";
+
+
+    style.textContent = `
+
+        /* --------------------------------------
+           КЛИЕНТ
+        -------------------------------------- */
+
+        .extended-client-fields {
+            margin-top: 8px;
+        }
+
+
+        .client-channel-grid,
+        .edit-two-columns {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0,1fr)
+                );
+
+            gap: 8px;
+        }
+
+
+        .extended-client-fields
+        input,
+
+        .extended-client-fields
+        select,
+
+        #unifiedOrderEditFields
+        input,
+
+        #unifiedOrderEditFields
+        select {
+
+            width: 100%;
+
+            min-width: 0;
+
+            box-sizing: border-box;
+
+            min-height: 42px;
+
+            padding: 8px 10px;
+
+            border-radius: 10px;
+
+            font-size: 16px;
+        }
+
+
+
+        /* --------------------------------------
+           ОБЩИЕ СУММЫ
+        -------------------------------------- */
+
+        .position-total-inputs,
+        .edit-position-total-inputs {
+
+            grid-column:
+                1 / -1;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            gap: 8px;
+
+            margin-top: 3px;
+        }
+
+
+        .position-total-inputs input,
+        .edit-position-total-inputs input {
+
+            width: 100%;
+
+            box-sizing: border-box;
+        }
+
+
+
+        /* Старые поля за единицу
+           остаются в DOM,
+           чтобы существующие расчёты работали */
+
+        .internal-unit-price-field {
+
+            position: absolute !important;
+
+            width: 1px !important;
+
+            height: 1px !important;
+
+            overflow: hidden !important;
+
+            opacity: 0 !important;
+
+            pointer-events: none !important;
+
+            margin: 0 !important;
+
+            padding: 0 !important;
+        }
+
+
+
+        /* --------------------------------------
+           ИНФОРМАЦИЯ О ЦЕНЕ ЗА 1 ШТ.
+        -------------------------------------- */
+
+        .position-unit-info {
+
+            grid-column:
+                1 / -1;
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            gap: 10px;
+
+            padding:
+                2px 2px 5px;
+
+            font-size:
+                11px;
+
+            color:
+                #73777f;
+        }
+
+
+        .position-unit-info b {
+
+            color:
+                #20232a;
+        }
+
+
+
+        /* --------------------------------------
+           ДАННЫЕ КЛИЕНТА В ЗАКАЗЕ
+        -------------------------------------- */
+
+        .order-client-extra-info {
+
+            display: grid;
+
+            gap: 5px;
+
+            margin-top: 10px;
+
+            padding-top: 10px;
+
+            border-top:
+                1px solid
+                rgba(0,0,0,.07);
+
+            font-size: 13px;
+
+            color: #555;
+        }
+
+
+
+        /* --------------------------------------
+           ГЛАВНАЯ КНОПКА СОХРАНЕНИЯ
+        -------------------------------------- */
+
+        .unified-save-button {
+
+            width: 100% !important;
+
+            min-height: 48px !important;
+
+            margin-top: 12px !important;
+
+            border-radius: 12px !important;
+
+            font-size: 15px !important;
+
+            font-weight: 700 !important;
+        }
+
+
+
+        @media
+        (max-width: 380px) {
+
+            .client-channel-grid,
+            .edit-two-columns {
+
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+
+// ============================================================
+// MIGRATION СТАРЫХ ЗАКАЗОВ
+// ============================================================
+
+function migrateExtendedClientFields() {
+
+    const orders =
+        getOrders();
+
+
+    let changed =
+        false;
+
+
+    orders.forEach(
+        order => {
+
+            if (
+                order.clientPhone == null
+            ) {
+
+                order.clientPhone = "";
+
+                changed = true;
+            }
+
+
+            if (
+                order.salesChannel == null
+            ) {
+
+                order.salesChannel = "";
+
+                changed = true;
+            }
+
+
+            if (
+                order.contactChannel == null
+            ) {
+
+                order.contactChannel = "";
+
+                changed = true;
+            }
+        }
+    );
+
+
+    if (changed) {
+
+        saveOrders(
+            orders
+        );
+    }
+}
+
+
+
+// ============================================================
+// НАБЛЮДАТЕЛЬ
+// НУЖЕН ДЛЯ ДИНАМИЧЕСКИ ДОБАВЛЕННЫХ ПОЗИЦИЙ
+// ============================================================
+
+const extendedOrderObserver =
+    new MutationObserver(
+        () => {
+
+            enhanceAllNewOrderPositions();
+
+            if (
+                document.querySelector(
+                    "#editOrderPositions"
+                )
+            ) {
+
+                enhanceEditPositionCards();
+            }
+        }
+    );
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        migrateExtendedClientFields();
+
+        addExtendedOrderStyles();
+
+        addExtendedClientFieldsToNewOrder();
+
+        enhanceAllNewOrderPositions();
+
+
+        extendedOrderObserver.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
+);
