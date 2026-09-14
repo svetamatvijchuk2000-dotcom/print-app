@@ -29,3 +29,14 @@ function calculate() {
     document.getElementById("total").textContent =
         total + " грн";
 }
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js")
+            .then(() => {
+                console.log("PWA готово");
+            })
+            .catch(error => {
+                console.log("Ошибка PWA:", error);
+            });
+    });
+}
