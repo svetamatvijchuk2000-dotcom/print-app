@@ -1,93 +1,118 @@
-// ========================================
-// PRINT APP
-// ========================================
+/* =========================================================
+   PRINT APP — РАСЧЁТ ЗАКАЗОВ + КАТАЛОГ + ЗАКАЗЫ
+   ========================================================= */
 
 
-// ========================================
-// КАТАЛОГ ПО УМОЛЧАНИЮ
-// ========================================
+/* =========================================================
+   ЦЕНЫ ПО УМОЛЧАНИЮ
+   ========================================================= */
 
-const DEFAULT_CATALOG = {
+const DEFAULT_DIPLOMA_PRICES = {
 
-    diplomas: {
-
-        "Диплом УФ — А5": {
-            "1":  { sale: 300, cost: 240 },
-            "3":  { sale: 280, cost: 200 },
-            "11": { sale: 260, cost: 190 },
-            "21": { sale: 240, cost: 180 },
-            "50": { sale: 220, cost: 170 }
-        },
-
-        "Диплом УФ — А4": {
-            "1":  { sale: 470, cost: 420 },
-            "3":  { sale: 450, cost: 400 },
-            "11": { sale: 430, cost: 370 },
-            "21": { sale: 410, cost: 350 },
-            "50": { sale: 390, cost: 320 }
-        },
-
-        "Диплом сублимация — А5": {
-            "1":  { sale: 300, cost: 240 },
-            "3":  { sale: 280, cost: 190 },
-            "11": { sale: 260, cost: 180 },
-            "21": { sale: 240, cost: 170 },
-            "50": { sale: 220, cost: 165 }
-        },
-
-        "Диплом сублимация — А4": {
-            "1":  { sale: 470, cost: 400 },
-            "3":  { sale: 450, cost: 390 },
-            "11": { sale: 430, cost: 360 },
-            "21": { sale: 410, cost: 340 },
-            "50": { sale: 390, cost: 310 }
-        }
+    diploma_uv_A5: {
+        "1": { sale: 300, cost: 240 },
+        "2": { sale: 300, cost: 240 },
+        "3-10": { sale: 280, cost: 200 },
+        "11-20": { sale: 260, cost: 190 },
+        "21-50": { sale: 240, cost: 180 },
+        "50+": { sale: 220, cost: 170 }
     },
 
-    readyCups: {
+    diploma_uv_A4: {
+        "1": { sale: 470, cost: 420 },
+        "2": { sale: 470, cost: 420 },
+        "3-10": { sale: 450, cost: 400 },
+        "11-20": { sale: 430, cost: 370 },
+        "21-50": { sale: 410, cost: 350 },
+        "50+": { sale: 390, cost: 320 }
+    },
 
-        "Чашка с карабином 300 мл — С/С": {
-            sale: 159,
-            cost: 159
-        },
+    diploma_sub_A5: {
+        "1": { sale: 300, cost: 240 },
+        "2": { sale: 300, cost: 240 },
+        "3-10": { sale: 280, cost: 190 },
+        "11-20": { sale: 260, cost: 180 },
+        "21-50": { sale: 240, cost: 170 },
+        "50+": { sale: 220, cost: 165 }
+    },
 
-        "Чашка с карабином 300 мл — С/Кр": {
-            sale: 159,
-            cost: 159
-        },
-
-        "Чашка с карабином 300 мл — С/Черн": {
-            sale: 159,
-            cost: 159
-        },
-
-        "Чашка цветная внутри и ручка 330 мл": {
-            sale: 59,
-            cost: 59
-        },
-
-        "Белая чашка 330 мл": {
-            sale: 47,
-            cost: 47
-        }
+    diploma_sub_A4: {
+        "1": { sale: 470, cost: 400 },
+        "2": { sale: 470, cost: 400 },
+        "3-10": { sale: 450, cost: 390 },
+        "11-20": { sale: 430, cost: 360 },
+        "21-50": { sale: 410, cost: 340 },
+        "50+": { sale: 390, cost: 310 }
     }
+
 };
 
 
-// ========================================
-// КАТАЛОГ: ЗАГРУЗКА / СОХРАНЕНИЕ
-// ========================================
+/* =========================================================
+   ГОТОВЫЕ ЧАШКИ
+   ========================================================= */
+
+const DEFAULT_READY_CUPS = {
+
+    cup_carabiner_300_ss: {
+        name: "Чашка с карабином 300 мл — С/С",
+        price: 159
+    },
+
+    cup_carabiner_300_sk: {
+        name: "Чашка с карабином 300 мл — С/Кр",
+        price: 159
+    },
+
+    cup_carabiner_300_black: {
+        name: "Чашка с карабином 300 мл — С/Черн",
+        price: 159
+    },
+
+    cup_color_330: {
+        name: "Чашка цветная внутри и ручка 330 мл",
+        price: 59,
+        colorRequired: true
+    },
+
+    cup_white_330: {
+        name: "Белая чашка 330 мл",
+        price: 47
+    }
+
+};
+
+
+/* =========================================================
+   КАТАЛОГ
+   ========================================================= */
+
+let diplomaPrices = {};
+let readyCups = {};
 
 function loadCatalog() {
 
     try {
 
-        const saved =
-            localStorage.getItem("printCatalog");
+        const savedDiplomas =
+            localStorage.getItem("diplomaPrices");
 
-        if (saved) {
-            return JSON.parse(saved);
-        }
+        const savedCups =
+            localStorage.getItem("readyCups");
+
+        diplomaPrices =
+            savedDiplomas
+                ? JSON.parse(savedDiplomas)
+                : JSON.parse(
+                    JSON.stringify(DEFAULT_DIPLOMA_PRICES)
+                );
+
+        readyCups =
+            savedCups
+                ? JSON.parse(savedCups)
+                : JSON.parse(
+                    JSON.stringify(DEFAULT_READY_CUPS)
+                );
 
     } catch (error) {
 
@@ -95,75 +120,54 @@ function loadCatalog() {
             "Ошибка загрузки каталога:",
             error
         );
+
+        diplomaPrices =
+            JSON.parse(
+                JSON.stringify(DEFAULT_DIPLOMA_PRICES)
+            );
+
+        readyCups =
+            JSON.parse(
+                JSON.stringify(DEFAULT_READY_CUPS)
+            );
+
     }
 
-    return JSON.parse(
-        JSON.stringify(DEFAULT_CATALOG)
-    );
 }
 
+loadCatalog();
 
-function saveCatalog(catalog) {
+
+function saveCatalog() {
 
     localStorage.setItem(
-        "printCatalog",
-        JSON.stringify(catalog)
+        "diplomaPrices",
+        JSON.stringify(diplomaPrices)
     );
+
+    localStorage.setItem(
+        "readyCups",
+        JSON.stringify(readyCups)
+    );
+
 }
 
 
-// ========================================
-// ЦЕНА ДИПЛОМА
-// ========================================
-
-function getDiplomaPrice(product, quantity) {
-
-    const catalog = loadCatalog();
-
-    const item =
-        catalog.diplomas?.[product];
-
-    if (!item) {
-
-        return {
-            sale: 0,
-            cost: 0
-        };
-    }
-
-    let tier = "1";
-
-    if (quantity >= 50) {
-
-        tier = "50";
-
-    } else if (quantity >= 21) {
-
-        tier = "21";
-
-    } else if (quantity >= 11) {
-
-        tier = "11";
-
-    } else if (quantity >= 3) {
-
-        tier = "3";
-    }
-
-    return item[tier] || item["1"];
-}
-
-
-// ========================================
-// ДОБАВЛЕНИЕ ПОЗИЦИИ
-// ========================================
+/* =========================================================
+   СОЗДАНИЕ ПОЗИЦИИ
+   ========================================================= */
 
 function addPosition() {
 
-    const container =
+    const positions =
         document.getElementById("positions");
 
-    if (!container) return;
+    if (!positions) {
+        return;
+    }
+
+    const positionCount =
+        positions.querySelectorAll(".position").length + 1;
 
     const position =
         document.createElement("div");
@@ -175,7 +179,7 @@ function addPosition() {
         <div class="position-header">
 
             <strong>
-                Позиция ${container.children.length + 1}
+                Позиция ${positionCount}
             </strong>
 
             <button
@@ -257,58 +261,56 @@ function addPosition() {
             </div>
 
         </div>
+
     `;
 
-    container.appendChild(position);
+    positions.appendChild(position);
 
-    updatePositionNumbers();
+    renumberPositions();
 
-    updateOrderTotals();
 }
 
 
-// ========================================
-// УДАЛЕНИЕ ПОЗИЦИИ
-// ========================================
+/* =========================================================
+   УДАЛЕНИЕ ПОЗИЦИИ
+   ========================================================= */
 
 function removePosition(button) {
+
+    const positions =
+        document.querySelectorAll(".position");
+
+    if (positions.length <= 1) {
+
+        alert(
+            "В заказе должна остаться хотя бы одна позиция."
+        );
+
+        return;
+    }
 
     const position =
         button.closest(".position");
 
-    if (!position) return;
-
-    const container =
-        document.getElementById("positions");
-
-    if (!container) return;
-
-    if (container.children.length <= 1) {
-
-        clearPosition(position);
-
-    } else {
-
+    if (position) {
         position.remove();
-
     }
 
-    updatePositionNumbers();
+    renumberPositions();
 
-    updateOrderTotals();
+    calculateAll();
+
 }
 
 
-// ========================================
-// НОМЕРА ПОЗИЦИЙ
-// ========================================
+/* =========================================================
+   НУМЕРАЦИЯ
+   ========================================================= */
 
-function updatePositionNumbers() {
+function renumberPositions() {
 
     const positions =
-        document.querySelectorAll(
-            "#positions .position"
-        );
+        document.querySelectorAll(".position");
 
     positions.forEach(
         (position, index) => {
@@ -322,24 +324,30 @@ function updatePositionNumbers() {
 
                 title.textContent =
                     `Позиция ${index + 1}`;
+
             }
+
         }
     );
+
 }
 
 
-// ========================================
-// ОЧИСТИТЬ ОДНУ ПОЗИЦИЮ
-// ========================================
+/* =========================================================
+   ВЫБОР КАТЕГОРИИ
+   ========================================================= */
 
-function clearPosition(position) {
+function updateProductOptions(categorySelect) {
+
+    const position =
+        categorySelect.closest(".position");
+
+    if (!position) {
+        return;
+    }
 
     const category =
-        position.querySelector(".category");
-
-    if (category) {
-        category.value = "";
-    }
+        categorySelect.value;
 
     const productArea =
         position.querySelector(".product-area");
@@ -347,892 +355,771 @@ function clearPosition(position) {
     const manualFields =
         position.querySelector(".manual-fields");
 
-    if (productArea) {
-        productArea.innerHTML = "";
+    productArea.innerHTML = "";
+
+    manualFields.innerHTML = "";
+
+
+    /* ---------- ДИПЛОМЫ ---------- */
+
+    if (category === "diploma") {
+
+        productArea.innerHTML = `
+
+            <label>Вид диплома</label>
+
+            <select
+                class="diploma-type"
+                onchange="updateDiploma(this)"
+            >
+
+                <option value="">
+                    Выберите вид
+                </option>
+
+                <option value="diploma_uv">
+                    Диплом УФ
+                </option>
+
+                <option value="diploma_sub">
+                    Диплом сублимация
+                </option>
+
+            </select>
+
+            <label>Размер</label>
+
+            <select
+                class="diploma-size"
+                onchange="updateDiploma(this)"
+            >
+
+                <option value="">
+                    Выберите размер
+                </option>
+
+                <option value="A5">
+                    А5
+                </option>
+
+                <option value="A4">
+                    А4
+                </option>
+
+            </select>
+
+            <label>Количество</label>
+
+            <input
+                type="number"
+                class="quantity"
+                min="1"
+                value="1"
+                oninput="updateDiploma(this)"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+        return;
     }
 
-    if (manualFields) {
-        manualFields.innerHTML = "";
+
+    /* ---------- ГОТОВЫЕ ЧАШКИ ---------- */
+
+    if (category === "cup_ready") {
+
+        productArea.innerHTML = `
+
+            <label>Вид чашки</label>
+
+            <select
+                class="ready-cup"
+                onchange="updateReadyCup(this)"
+            >
+
+                <option value="">
+                    Выберите чашку
+                </option>
+
+                <option value="cup_carabiner_300_ss">
+                    Чашка с карабином 300 мл — С/С
+                </option>
+
+                <option value="cup_carabiner_300_sk">
+                    Чашка с карабином 300 мл — С/Кр
+                </option>
+
+                <option value="cup_carabiner_300_black">
+                    Чашка с карабином 300 мл — С/Черн
+                </option>
+
+                <option value="cup_color_330">
+                    Чашка цветная внутри и ручка 330 мл
+                </option>
+
+                <option value="cup_white_330">
+                    Белая чашка 330 мл
+                </option>
+
+            </select>
+
+            <div class="cup-extra"></div>
+
+            <label>Количество</label>
+
+            <input
+                type="number"
+                class="quantity"
+                min="1"
+                value="1"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+        return;
     }
 
-    updateOrderTotals();
+
+    /* ---------- ПЕЧАТЬ ЧАШКА ---------- */
+
+    if (category === "cup_print") {
+
+        manualFields.innerHTML = `
+
+            <label>Количество</label>
+
+            <input
+                type="number"
+                class="quantity"
+                min="1"
+                value="1"
+                oninput="calculateAll()"
+            />
+
+            <label>
+                Сумма печати за 1 шт.
+            </label>
+
+            <input
+                type="number"
+                class="manual-sale"
+                min="0"
+                step="1"
+                value="0"
+                placeholder="Введите сумму"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+        return;
+    }
+
+
+    /* ---------- НЕСТАНДАРТНАЯ ЧАШКА ---------- */
+
+    if (category === "cup_custom") {
+
+        manualFields.innerHTML = `
+
+            <label>Какая чашка</label>
+
+            <input
+                type="text"
+                class="description"
+                placeholder="Например: кружка стекло 350 мл"
+                oninput="calculateAll()"
+            />
+
+            <label>Количество</label>
+
+            <input
+                type="number"
+                class="quantity"
+                min="1"
+                value="1"
+                oninput="calculateAll()"
+            />
+
+            <label>
+                Себестоимость за 1 шт.
+            </label>
+
+            <input
+                type="number"
+                class="manual-cost"
+                min="0"
+                step="1"
+                value="0"
+                oninput="calculateAll()"
+            />
+
+            <label>
+                Цена продажи за 1 шт.
+            </label>
+
+            <input
+                type="number"
+                class="manual-sale"
+                min="0"
+                step="1"
+                value="0"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+        return;
+    }
+
+
+    /* ---------- УПАКОВКА ---------- */
+
+    if (category === "packaging") {
+
+        manualFields.innerHTML = `
+
+            <label>Вид упаковки</label>
+
+            <input
+                type="text"
+                class="description"
+                placeholder="Например: коробка для кружки"
+                oninput="calculateAll()"
+            />
+
+            <label>Количество</label>
+
+            <input
+                type="number"
+                class="quantity"
+                min="1"
+                value="1"
+                oninput="calculateAll()"
+            />
+
+            <label>
+                Себестоимость за 1 шт.
+            </label>
+
+            <input
+                type="number"
+                class="manual-cost"
+                min="0"
+                step="1"
+                value="0"
+                oninput="calculateAll()"
+            />
+
+            <label>
+                Цена продажи за 1 шт.
+            </label>
+
+            <input
+                type="number"
+                class="manual-sale"
+                min="0"
+                step="1"
+                value="0"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+        return;
+    }
+
+
+    /* ---------- ДИЗАЙНЕР ---------- */
+
+    if (category === "designer") {
+
+        manualFields.innerHTML = `
+
+            <label>
+                Стоимость услуги
+            </label>
+
+            <input
+                type="number"
+                class="manual-sale"
+                min="0"
+                step="1"
+                value="0"
+                placeholder="Введите сумму"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+        return;
+    }
+
+
+    /* ---------- СРОЧНОСТЬ ---------- */
+
+    if (category === "urgent") {
+
+        manualFields.innerHTML = `
+
+            <label>
+                Стоимость срочности
+            </label>
+
+            <input
+                type="number"
+                class="manual-sale"
+                min="0"
+                step="1"
+                value="0"
+                placeholder="Введите сумму"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+        calculatePosition(position);
+
+    }
+
 }
 
 
-// ========================================
-// ГЛАВНАЯ ФУНКЦИЯ КАТЕГОРИИ
-// ========================================
+/* =========================================================
+   ДИПЛОМ
+   ========================================================= */
 
-function updateProductOptions(select) {
+function updateDiploma(element) {
+
+    const position =
+        element.closest(".position");
+
+    calculatePosition(position);
+
+    calculateAll();
+
+}
+
+
+/* =========================================================
+   ГОТОВАЯ ЧАШКА
+   ========================================================= */
+
+function updateReadyCup(select) {
 
     const position =
         select.closest(".position");
 
-    if (!position) return;
-
-    const type = select.value;
-
-    const productArea =
-        position.querySelector(".product-area");
-
-    const manualFields =
-        position.querySelector(".manual-fields");
-
-    if (!productArea || !manualFields) {
+    if (!position) {
         return;
     }
 
-    productArea.innerHTML = "";
-    manualFields.innerHTML = "";
+    const cup =
+        readyCups[select.value];
 
+    const extra =
+        position.querySelector(".cup-extra");
 
-    if (type === "diploma") {
-
-        renderDiplomaFields(position);
-
+    if (!extra) {
         return;
     }
 
+    if (!cup) {
 
-    if (type === "cup_ready") {
+        extra.innerHTML = "";
 
-        renderReadyCupFields(position);
+        calculateAll();
 
         return;
     }
 
+    if (cup.colorRequired) {
 
-    if (type === "cup_print") {
+        extra.innerHTML = `
 
-        renderCupPrintFields(position);
+            <label>
+                Цвет чашки
+            </label>
 
-        return;
+            <input
+                type="text"
+                class="cup-color"
+                placeholder="Например: красная"
+                oninput="calculateAll()"
+            />
+
+        `;
+
+    } else {
+
+        extra.innerHTML = "";
+
     }
 
+    calculateAll();
 
-    if (type === "cup_custom") {
+}
 
-        renderCustomCupFields(position);
 
-        return;
+/* =========================================================
+   ЦЕНА ДИПЛОМА
+   ========================================================= */
+
+function getDiplomaPrice(
+    type,
+    size,
+    quantity
+) {
+
+    const key =
+        `${type}_${size}`;
+
+    const prices =
+        diplomaPrices[key];
+
+    if (!prices) {
+        return null;
     }
 
-
-    if (type === "packaging") {
-
-        renderPackagingFields(position);
-
-        return;
+    if (quantity <= 2) {
+        return prices["1"];
     }
 
-
-    if (type === "designer") {
-
-        renderDesignerFields(position);
-
-        return;
+    if (quantity <= 10) {
+        return prices["3-10"];
     }
 
-
-    if (type === "urgent") {
-
-        renderUrgentFields(position);
-
-        return;
+    if (quantity <= 20) {
+        return prices["11-20"];
     }
 
-    updateOrderTotals();
-}
-
-
-// ========================================
-// ДИПЛОМЫ
-// ========================================
-
-function renderDiplomaFields(position) {
-
-    const productArea =
-        position.querySelector(
-            ".product-area"
-        );
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    const catalog =
-        loadCatalog();
-
-    const products =
-        Object.keys(
-            catalog.diplomas
-        );
-
-    productArea.innerHTML = `
-
-        <label>
-            Вид диплома
-        </label>
-
-        <select class="product-select">
-
-            ${products.map(
-                product => `
-                    <option value="${escapeHtml(product)}">
-                        ${escapeHtml(product)}
-                    </option>
-                `
-            ).join("")}
-
-        </select>
-
-        <label>
-            Количество
-        </label>
-
-        <input
-            type="number"
-            class="quantity"
-            min="1"
-            value="1"
-        >
-    `;
-
-    manual.innerHTML = `
-
-        <label>
-            Цена продажи за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-        >
-
-        <label>
-            Себестоимость за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="cost-input"
-            min="0"
-        >
-    `;
-
-
-    const product =
-        productArea.querySelector(
-            ".product-select"
-        );
-
-    const quantity =
-        productArea.querySelector(
-            ".quantity"
-        );
-
-    const sale =
-        manual.querySelector(
-            ".sale-input"
-        );
-
-    const cost =
-        manual.querySelector(
-            ".cost-input"
-        );
-
-
-    function updatePrice() {
-
-        const prices =
-            getDiplomaPrice(
-                product.value,
-                Number(quantity.value) || 1
-            );
-
-        sale.value =
-            prices.sale;
-
-        cost.value =
-            prices.cost;
-
-        updateOrderTotals();
+    if (quantity <= 50) {
+        return prices["21-50"];
     }
 
+    return prices["50+"];
 
-    product.addEventListener(
-        "change",
-        updatePrice
-    );
-
-    quantity.addEventListener(
-        "input",
-        updatePrice
-    );
-
-    sale.addEventListener(
-        "input",
-        updateOrderTotals
-    );
-
-    cost.addEventListener(
-        "input",
-        updateOrderTotals
-    );
-
-
-    updatePrice();
 }
 
 
-// ========================================
-// ГОТОВЫЕ ЧАШКИ
-// ========================================
-
-function renderReadyCupFields(position) {
-
-    const productArea =
-        position.querySelector(
-            ".product-area"
-        );
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    const catalog =
-        loadCatalog();
-
-    const products =
-        Object.keys(
-            catalog.readyCups
-        );
-
-
-    productArea.innerHTML = `
-
-        <label>
-            Вид чашки
-        </label>
-
-        <select class="product-select">
-
-            ${products.map(
-                product => `
-                    <option value="${escapeHtml(product)}">
-                        ${escapeHtml(product)}
-                    </option>
-                `
-            ).join("")}
-
-        </select>
-
-        <label>
-            Количество
-        </label>
-
-        <input
-            type="number"
-            class="quantity"
-            min="1"
-            value="1"
-        >
-    `;
-
-
-    manual.innerHTML = `
-
-        <label>
-            Цена продажи за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-        />
-    `;
-
-
-    const product =
-        productArea.querySelector(
-            ".product-select"
-        );
-
-    const quantity =
-        productArea.querySelector(
-            ".quantity"
-        );
-
-    const sale =
-        manual.querySelector(
-            ".sale-input"
-        );
-
-
-    function updatePrice() {
-
-        const item =
-            catalog.readyCups[
-                product.value
-            ];
-
-        sale.value =
-            item ? item.sale : 0;
-
-        updateOrderTotals();
-    }
-
-
-    product.addEventListener(
-        "change",
-        updatePrice
-    );
-
-    quantity.addEventListener(
-        "input",
-        updateOrderTotals
-    );
-
-    sale.addEventListener(
-        "input",
-        updateOrderTotals
-    );
-
-
-    updatePrice();
-}
-
-
-// ========================================
-// ПЕЧАТЬ НА ЧАШКЕ
-// ========================================
-
-function renderCupPrintFields(position) {
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    manual.innerHTML = `
-
-        <label>
-            Количество
-        </label>
-
-        <input
-            type="number"
-            class="quantity"
-            min="1"
-            value="1"
-        >
-
-        <label>
-            Цена печати за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-            value="0"
-            placeholder="Введите сумму"
-        >
-    `;
-
-
-    addInputListeners(
-        manual
-    );
-}
-
-
-// ========================================
-// ОБЫЧНАЯ ЧАШКА
-// ========================================
-
-function renderCustomCupFields(position) {
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    manual.innerHTML = `
-
-        <label>
-            Описание
-        </label>
-
-        <input
-            type="text"
-            class="description"
-            placeholder="Например: белая чашка"
-        >
-
-        <label>
-            Количество
-        </label>
-
-        <input
-            type="number"
-            class="quantity"
-            min="1"
-            value="1"
-        >
-
-        <label>
-            Цена продажи за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-        >
-
-        <label>
-            Себестоимость за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="cost-input"
-            min="0"
-        >
-    `;
-
-
-    addInputListeners(
-        manual
-    );
-}
-
-
-// ========================================
-// УПАКОВКА
-// ========================================
-
-function renderPackagingFields(position) {
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    manual.innerHTML = `
-
-        <label>
-            Вид упаковки
-        </label>
-
-        <input
-            type="text"
-            class="description"
-            placeholder="Например: коробка"
-        >
-
-        <label>
-            Количество
-        </label>
-
-        <input
-            type="number"
-            class="quantity"
-            min="1"
-            value="1"
-        >
-
-        <label>
-            Цена продажи за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-        >
-
-        <label>
-            Себестоимость за 1 шт.
-        </label>
-
-        <input
-            type="number"
-            class="cost-input"
-            min="0"
-        >
-    `;
-
-
-    addInputListeners(
-        manual
-    );
-}
-
-
-// ========================================
-// ДИЗАЙНЕР
-// ========================================
-
-function renderDesignerFields(position) {
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    manual.innerHTML = `
-
-        <label>
-            Описание
-        </label>
-
-        <input
-            type="text"
-            class="description"
-            placeholder="Например: разработка макета"
-        >
-
-        <label>
-            Количество
-        </label>
-
-        <input
-            type="number"
-            class="quantity"
-            min="1"
-            value="1"
-        >
-
-        <label>
-            Стоимость
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-            value="0"
-        >
-    `;
-
-
-    addInputListeners(
-        manual
-    );
-}
-
-
-// ========================================
-// СРОЧНОСТЬ
-// ========================================
-
-function renderUrgentFields(position) {
-
-    const manual =
-        position.querySelector(
-            ".manual-fields"
-        );
-
-    manual.innerHTML = `
-
-        <label>
-            Описание
-        </label>
-
-        <input
-            type="text"
-            class="description"
-            placeholder="Например: срочное изготовление"
-        >
-
-        <label>
-            Стоимость
-        </label>
-
-        <input
-            type="number"
-            class="sale-input"
-            min="0"
-            value="0"
-        >
-    `;
-
-
-    addInputListeners(
-        manual
-    );
-}
-
-
-// ========================================
-// ОБРАБОТКА INPUT
-// ========================================
-
-function addInputListeners(container) {
-
-    container
-        .querySelectorAll("input")
-        .forEach(
-            input => {
-
-                input.addEventListener(
-                    "input",
-                    updateOrderTotals
-                );
-
-            }
-        );
-}
-
-
-// ========================================
-// РАСЧЁТ ПОЗИЦИИ
-// ========================================
+/* =========================================================
+   РАСЧЁТ ПОЗИЦИИ
+   ========================================================= */
 
 function calculatePosition(position) {
+
+    if (!position) {
+        return;
+    }
 
     const category =
         position.querySelector(
             ".category"
-        );
-
-    if (!category) {
-
-        return {
-            sale: 0,
-            cost: 0,
-            profit: 0
-        };
-    }
-
-
-    const type =
-        category.value;
-
-
-    const quantityInput =
-        position.querySelector(
-            ".quantity"
-        );
-
-    const quantity =
-        Math.max(
-            1,
-            Number(
-                quantityInput?.value
-            ) || 1
-        );
-
-
-    const saleInput =
-        position.querySelector(
-            ".sale-input"
-        );
-
-    const costInput =
-        position.querySelector(
-            ".cost-input"
-        );
-
-
-    const salePerUnit =
-        Number(
-            saleInput?.value
-        ) || 0;
-
-
-    const costPerUnit =
-        Number(
-            costInput?.value
-        ) || 0;
-
+        )?.value || "";
 
     let sale = 0;
     let cost = 0;
 
 
-    if (type === "diploma") {
+    if (category === "diploma") {
 
-        sale =
-            salePerUnit * quantity;
-
-        cost =
-            costPerUnit * quantity;
-    }
-
-
-    else if (type === "cup_ready") {
-
-        const product =
+        const type =
             position.querySelector(
-                ".product-select"
-            )?.value;
+                ".diploma-type"
+            )?.value || "";
 
-        const catalog =
-            loadCatalog();
+        const size =
+            position.querySelector(
+                ".diploma-size"
+            )?.value || "";
 
-        const item =
-            catalog.readyCups?.[product];
+        const quantity =
+            Number(
+                position.querySelector(
+                    ".quantity"
+                )?.value
+            ) || 0;
 
+        if (
+            type &&
+            size &&
+            quantity > 0
+        ) {
 
-        sale =
-            salePerUnit * quantity;
+            const price =
+                getDiplomaPrice(
+                    type,
+                    size,
+                    quantity
+                );
 
-        cost =
-            (item?.cost || 0) * quantity;
+            if (price) {
+
+                sale =
+                    price.sale * quantity;
+
+                cost =
+                    price.cost * quantity;
+
+            }
+
+        }
+
     }
 
 
-    else if (type === "cup_print") {
+    if (category === "cup_ready") {
+
+        const cupId =
+            position.querySelector(
+                ".ready-cup"
+            )?.value || "";
+
+        const quantity =
+            Number(
+                position.querySelector(
+                    ".quantity"
+                )?.value
+            ) || 0;
+
+        const cup =
+            readyCups[cupId];
+
+        if (
+            cup &&
+            quantity > 0
+        ) {
+
+            sale =
+                cup.price * quantity;
+
+            cost =
+                cup.price * quantity;
+
+        }
+
+    }
+
+
+    if (category === "cup_print") {
+
+        const quantity =
+            Number(
+                position.querySelector(
+                    ".quantity"
+                )?.value
+            ) || 0;
+
+        const price =
+            Number(
+                position.querySelector(
+                    ".manual-sale"
+                )?.value
+            ) || 0;
 
         sale =
-            salePerUnit * quantity;
+            price * quantity;
 
         cost = 0;
+
     }
 
 
-    else if (type === "cup_custom") {
+    if (category === "cup_custom") {
+
+        const quantity =
+            Number(
+                position.querySelector(
+                    ".quantity"
+                )?.value
+            ) || 0;
+
+        const salePrice =
+            Number(
+                position.querySelector(
+                    ".manual-sale"
+                )?.value
+            ) || 0;
+
+        const costPrice =
+            Number(
+                position.querySelector(
+                    ".manual-cost"
+                )?.value
+            ) || 0;
 
         sale =
-            salePerUnit * quantity;
+            salePrice * quantity;
 
         cost =
-            costPerUnit * quantity;
+            costPrice * quantity;
+
     }
 
 
-    else if (type === "packaging") {
+    if (category === "packaging") {
+
+        const quantity =
+            Number(
+                position.querySelector(
+                    ".quantity"
+                )?.value
+            ) || 0;
+
+        const salePrice =
+            Number(
+                position.querySelector(
+                    ".manual-sale"
+                )?.value
+            ) || 0;
+
+        const costPrice =
+            Number(
+                position.querySelector(
+                    ".manual-cost"
+                )?.value
+            ) || 0;
 
         sale =
-            salePerUnit * quantity;
+            salePrice * quantity;
 
         cost =
-            costPerUnit * quantity;
+            costPrice * quantity;
+
     }
 
 
-    else if (type === "designer") {
+    if (category === "designer") {
 
         sale =
-            salePerUnit * quantity;
+            Number(
+                position.querySelector(
+                    ".manual-sale"
+                )?.value
+            ) || 0;
 
         cost = 0;
+
     }
 
 
-    else if (type === "urgent") {
+    if (category === "urgent") {
 
         sale =
-            salePerUnit;
+            Number(
+                position.querySelector(
+                    ".manual-sale"
+                )?.value
+            ) || 0;
 
         cost = 0;
+
     }
 
 
-    return {
-        sale,
-        cost,
-        profit: sale - cost
-    };
-}
+    const profit =
+        sale - cost;
 
 
-// ========================================
-// ОБНОВЛЕНИЕ ЦЕНЫ ПОЗИЦИИ
-// ========================================
-
-function updatePositionPrice(position) {
-
-    const result =
-        calculatePosition(position);
-
-
-    const sale =
+    const saleElement =
         position.querySelector(
             ".sale-price"
         );
 
-    const cost =
+    const costElement =
         position.querySelector(
             ".cost-price"
         );
 
-    const profit =
+    const profitElement =
         position.querySelector(
             ".profit-price"
         );
 
-
-    if (sale) {
-
-        sale.textContent =
-            `${result.sale} грн`;
+    if (saleElement) {
+        saleElement.textContent =
+            `${sale} грн`;
     }
 
-    if (cost) {
-
-        cost.textContent =
-            `${result.cost} грн`;
+    if (costElement) {
+        costElement.textContent =
+            `${cost} грн`;
     }
 
-    if (profit) {
-
-        profit.textContent =
-            `${result.profit} грн`;
+    if (profitElement) {
+        profitElement.textContent =
+            `${profit} грн`;
     }
+
 }
 
 
-// ========================================
-// ОБЩИЕ ИТОГИ
-// ========================================
+/* =========================================================
+   ОБЩИЙ РАСЧЁТ
+   ========================================================= */
 
-function updateOrderTotals() {
+function calculateAll() {
 
     const positions =
         document.querySelectorAll(
-            "#positions .position"
+            ".position"
         );
-
 
     let totalSale = 0;
     let totalCost = 0;
 
-
     positions.forEach(
         position => {
 
-            const result =
-                calculatePosition(
-                    position
-                );
+            calculatePosition(position);
 
+            const saleText =
+                position.querySelector(
+                    ".sale-price"
+                )?.textContent || "0";
 
-            totalSale +=
-                result.sale;
+            const costText =
+                position.querySelector(
+                    ".cost-price"
+                )?.textContent || "0";
 
-            totalCost +=
-                result.cost;
+            const sale =
+                parseFloat(
+                    saleText.replace(
+                        ",",
+                        "."
+                    )
+                ) || 0;
 
+            const cost =
+                parseFloat(
+                    costText.replace(
+                        ",",
+                        "."
+                    )
+                ) || 0;
 
-            updatePositionPrice(
-                position
-            );
+            totalSale += sale;
+            totalCost += cost;
 
         }
     );
 
-
     const totalProfit =
         totalSale - totalCost;
-
 
     const totalSaleElement =
         document.getElementById(
@@ -1249,210 +1136,190 @@ function updateOrderTotals() {
             "totalProfit"
         );
 
-
     if (totalSaleElement) {
-
         totalSaleElement.textContent =
             `${totalSale} грн`;
     }
 
     if (totalCostElement) {
-
         totalCostElement.textContent =
             `${totalCost} грн`;
     }
 
     if (totalProfitElement) {
-
         totalProfitElement.textContent =
             `${totalProfit} грн`;
     }
+
 }
 
 
-// ========================================
-// ПОЛУЧЕНИЕ ПОЗИЦИЙ ЗАКАЗА
-// ========================================
+/* =========================================================
+   ОЧИСТКА ЗАКАЗА
+   ========================================================= */
 
-function getOrderPositions() {
+function clearOrder() {
+
+    const confirmed =
+        confirm(
+            "Очистить текущий заказ?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const clientName =
+        document.getElementById(
+            "clientName"
+        );
+
+    if (clientName) {
+        clientName.value = "";
+    }
 
     const positions =
-        document.querySelectorAll(
-            "#positions .position"
+        document.getElementById(
+            "positions"
         );
 
-
-    return Array.from(
-        positions
-    )
-        .map(position => {
-
-            const category =
-                position.querySelector(
-                    ".category"
-                );
-
-            if (
-                !category ||
-                !category.value
-            ) {
-                return null;
-            }
-
-
-            const type =
-                category.value;
-
-
-            const result =
-                calculatePosition(
-                    position
-                );
-
-
-            const quantity =
-                Math.max(
-                    1,
-                    Number(
-                        position.querySelector(
-                            ".quantity"
-                        )?.value
-                    ) || 1
-                );
-
-
-            const product =
-                position.querySelector(
-                    ".product-select"
-                )?.value || "";
-
-
-            const description =
-                position.querySelector(
-                    ".description"
-                )?.value || "";
-
-
-            const salePerUnit =
-                Number(
-                    position.querySelector(
-                        ".sale-input"
-                    )?.value
-                ) || 0;
-
-
-            const costPerUnit =
-                Number(
-                    position.querySelector(
-                        ".cost-input"
-                    )?.value
-                ) || 0;
-
-
-            return {
-
-                type,
-
-                product,
-
-                description,
-
-                quantity,
-
-                salePerUnit,
-
-                costPerUnit,
-
-                sale:
-                    result.sale,
-
-                cost:
-                    result.cost,
-
-                profit:
-                    result.profit
-            };
-
-        })
-        .filter(Boolean);
-}
-
-
-// ========================================
-// ЗАКАЗЫ
-// ========================================
-
-function getOrders() {
-
-    try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                "printOrders"
-            ) || "[]"
-        );
-
-    } catch {
-
-        return [];
+    if (!positions) {
+        return;
     }
+
+    positions.innerHTML = "";
+
+    addPosition();
+
+    calculateAll();
+
 }
 
 
-// ========================================
-// СОХРАНЕНИЕ ЗАКАЗА
-// ========================================
+/* =========================================================
+   СОХРАНЕНИЕ ЗАКАЗА
+   ========================================================= */
 
 function saveOrder() {
+
+    calculateAll();
 
     const client =
         document.getElementById(
             "clientName"
         )?.value.trim() || "";
 
-
     const positions =
-        getOrderPositions();
+        document.querySelectorAll(
+            ".position"
+        );
+
+    const orderPositions = [];
+
+    positions.forEach(
+        position => {
+
+            const category =
+                position.querySelector(
+                    ".category"
+                )?.value || "";
+
+            if (!category) {
+                return;
+            }
+
+            const quantity =
+                Number(
+                    position.querySelector(
+                        ".quantity"
+                    )?.value
+                ) || 0;
+
+            const description =
+                position.querySelector(
+                    ".description"
+                )?.value || "";
+
+            const diplomaType =
+                position.querySelector(
+                    ".diploma-type"
+                )?.value || "";
+
+            const diplomaSize =
+                position.querySelector(
+                    ".diploma-size"
+                )?.value || "";
+
+            const readyCup =
+                position.querySelector(
+                    ".ready-cup"
+                )?.value || "";
+
+            const cupColor =
+                position.querySelector(
+                    ".cup-color"
+                )?.value || "";
+
+            const manualSale =
+                Number(
+                    position.querySelector(
+                        ".manual-sale"
+                    )?.value
+                ) || 0;
+
+            const manualCost =
+                Number(
+                    position.querySelector(
+                        ".manual-cost"
+                    )?.value
+                ) || 0;
+
+            orderPositions.push({
+
+                category,
+                quantity,
+                description,
+                diplomaType,
+                diplomaSize,
+                readyCup,
+                cupColor,
+                manualSale,
+                manualCost,
+
+                sale:
+                    position.querySelector(
+                        ".sale-price"
+                    )?.textContent ||
+                    "0 грн",
+
+                cost:
+                    position.querySelector(
+                        ".cost-price"
+                    )?.textContent ||
+                    "0 грн",
+
+                profit:
+                    position.querySelector(
+                        ".profit-price"
+                    )?.textContent ||
+                    "0 грн"
+
+            });
+
+        }
+    );
 
 
     if (
-        positions.length === 0
+        orderPositions.length === 0
     ) {
 
         alert(
-            "Выберите категорию хотя бы для одной позиции."
+            "Добавьте хотя бы одну позицию."
         );
 
         return;
     }
-
-
-    const totals =
-        positions.reduce(
-            (sum, item) => {
-
-                sum.sale +=
-                    item.sale;
-
-                sum.cost +=
-                    item.cost;
-
-                sum.profit +=
-                    item.profit;
-
-                return sum;
-
-            },
-            {
-                sale: 0,
-                cost: 0,
-                profit: 0
-            }
-        );
-
-
-    const orders =
-        getOrders();
 
 
     const order = {
@@ -1460,928 +1327,659 @@ function saveOrder() {
         id:
             Date.now(),
 
-        number:
-            orders.length + 1,
-
         date:
-            new Date().toISOString(),
+            new Date().toLocaleString(
+                "uk-UA"
+            ),
 
         client,
 
-        positions,
+        positions:
+            orderPositions,
 
         totalSale:
-            totals.sale,
+            document.getElementById(
+                "totalSale"
+            )?.textContent ||
+            "0 грн",
 
         totalCost:
-            totals.cost,
+            document.getElementById(
+                "totalCost"
+            )?.textContent ||
+            "0 грн",
 
         totalProfit:
-            totals.profit
+            document.getElementById(
+                "totalProfit"
+            )?.textContent ||
+            "0 грн"
+
     };
 
 
-    orders.unshift(
-        order
-    );
+    const orders =
+        JSON.parse(
+            localStorage.getItem(
+                "orders"
+            ) || "[]"
+        );
 
+    orders.push(order);
 
     localStorage.setItem(
-        "printOrders",
-        JSON.stringify(
-            orders
-        )
+        "orders",
+        JSON.stringify(orders)
     );
-
 
     alert(
-        "Заказ сохранён!"
+        "Заказ сохранён."
     );
-
 
     clearOrder();
+
 }
 
 
-// ========================================
-// ОЧИСТКА ЗАКАЗА
-// ========================================
+/* =========================================================
+   НАЗВАНИЯ КАТЕГОРИЙ
+   ========================================================= */
 
-function clearOrder() {
+const categoryNames = {
 
-    const container =
-        document.getElementById(
-            "positions"
-        );
+    diploma:
+        "Диплом",
 
-    if (!container) return;
+    cup_ready:
+        "Готовая чашка",
 
+    cup_print:
+        "Печать чашка",
 
-    container.innerHTML = `
+    cup_custom:
+        "Чашка",
 
-        <div class="position">
+    packaging:
+        "Упаковка для чашки",
 
-            <div class="position-header">
+    designer:
+        "Услуги дизайнера",
 
-                <strong>
-                    Позиция 1
-                </strong>
+    urgent:
+        "Срочность"
 
-                <button
-                    type="button"
-                    class="delete-button"
-                    onclick="removePosition(this)"
-                >
-                    ×
-                </button>
-
-            </div>
-
-            <label>
-                Категория
-            </label>
-
-            <select
-                class="category"
-                onchange="updateProductOptions(this)"
-            >
-
-                <option value="">
-                    Выберите категорию
-                </option>
-
-                <option value="diploma">
-                    Дипломы
-                </option>
-
-                <option value="cup_ready">
-                    Готовые чашки
-                </option>
-
-                <option value="cup_print">
-                    Печать чашка
-                </option>
-
-                <option value="cup_custom">
-                    Чашка
-                </option>
-
-                <option value="packaging">
-                    Упаковка для чашки
-                </option>
-
-                <option value="designer">
-                    Услуги дизайнера
-                </option>
-
-                <option value="urgent">
-                    Срочность
-                </option>
-
-            </select>
-
-            <div class="product-area"></div>
-
-            <div class="manual-fields"></div>
-
-            <div class="price-info">
-
-                <div>
-                    <span>Цена продажи:</span>
-                    <strong class="sale-price">
-                        0 грн
-                    </strong>
-                </div>
-
-                <div>
-                    <span>Себестоимость:</span>
-                    <strong class="cost-price">
-                        0 грн
-                    </strong>
-                </div>
-
-                <div>
-                    <span>Прибыль:</span>
-                    <strong class="profit-price">
-                        0 грн
-                    </strong>
-                </div>
-
-            </div>
-
-        </div>
-    `;
+};
 
 
-    const client =
-        document.getElementById(
-            "clientName"
-        );
+const catalogNames = {
 
-    if (client) {
-        client.value = "";
+    diploma_uv_A5:
+        "Диплом УФ — А5",
+
+    diploma_uv_A4:
+        "Диплом УФ — А4",
+
+    diploma_sub_A5:
+        "Диплом сублимация — А5",
+
+    diploma_sub_A4:
+        "Диплом сублимация — А4"
+
+};
+
+
+const catalogTiers = [
+
+    {
+        key: "1",
+        label: "1–2 шт."
+    },
+
+    {
+        key: "3-10",
+        label: "3–10 шт."
+    },
+
+    {
+        key: "11-20",
+        label: "11–20 шт."
+    },
+
+    {
+        key: "21-50",
+        label: "21–50 шт."
+    },
+
+    {
+        key: "50+",
+        label: "50+ шт."
     }
 
+];
 
-    updateOrderTotals();
-}
 
+/* =========================================================
+   СТИЛИ ДОПОЛНИТЕЛЬНЫХ ЭКРАНОВ
+   ========================================================= */
 
-// ========================================
-// ЭКРАН ЗАКАЗОВ
-// ========================================
-
-function openOrders() {
-
-    hideOrderScreen();
-
-    const screen =
-        getExtraScreen();
-
-
-    const orders =
-        getOrders();
-
-
-    let html = `
-
-        <div class="catalogScreen">
-
-            <button
-                type="button"
-                class="backToOrder"
-                onclick="showOrderScreen()"
-            >
-                ← Новый заказ
-            </button>
-
-            <h2>
-                Заказы
-            </h2>
-    `;
-
-
-    if (orders.length === 0) {
-
-        html += `
-
-            <div class="emptyOrders">
-                Пока нет сохранённых заказов.
-            </div>
-
-        `;
-
-    } else {
-
-        orders.forEach(
-            order => {
-
-                const date =
-                    new Date(
-                        order.date
-                    ).toLocaleString(
-                        "uk-UA"
-                    );
-
-
-                html += `
-
-                    <div
-                        class="orderCard"
-                    >
-
-                        <div class="orderTop">
-
-                            <strong>
-                                Заказ №${order.number}
-                            </strong>
-
-                            <span>
-                                ${date}
-                            </span>
-
-                        </div>
-
-                        <div>
-                            ${escapeHtml(
-                                order.client ||
-                                "Клиент не указан"
-                            )}
-                        </div>
-
-                        <div>
-                            Позиции:
-                            ${order.positions.length}
-                        </div>
-
-                        <div class="orderMoney">
-                            Продажа:
-                            <strong>
-                                ${order.totalSale} грн
-                            </strong>
-                        </div>
-
-                        <div>
-                            Себестоимость:
-                            ${order.totalCost} грн
-                        </div>
-
-                        <div>
-                            Прибыль:
-                            <strong>
-                                ${order.totalProfit} грн
-                            </strong>
-                        </div>
-
-                        <button
-                            type="button"
-                            class="viewOrder"
-                            onclick="openOrderDetails(${order.id})"
-                        >
-                            Открыть
-                        </button>
-
-                        <button
-                            type="button"
-                            class="deleteOrder"
-                            onclick="deleteOrder(${order.id})"
-                        >
-                            Удалить
-                        </button>
-
-                    </div>
-                `;
-            }
-        );
-    }
-
-
-    html += `
-
-        </div>
-    `;
-
-
-    screen.innerHTML =
-        html;
-
-    screen.style.display =
-        "block";
-
-    setActiveNav("Заказы");
-}
-
-
-// ========================================
-// ДЕТАЛИ ЗАКАЗА
-// ========================================
-
-function openOrderDetails(id) {
-
-    const order =
-        getOrders().find(
-            item =>
-                item.id === id
-        );
-
-
-    if (!order) return;
-
-
-    hideOrderScreen();
-
-    const screen =
-        getExtraScreen();
-
-
-    let html = `
-
-        <div class="catalogScreen">
-
-            <button
-                type="button"
-                class="backToOrders"
-                onclick="openOrders()"
-            >
-                ← Все заказы
-            </button>
-
-            <h2>
-                Заказ №${order.number}
-            </h2>
-
-            <p>
-                <strong>
-                    Клиент:
-                </strong>
-
-                ${escapeHtml(
-                    order.client ||
-                    "Не указан"
-                )}
-            </p>
-
-            <h3>
-                Позиции
-            </h3>
-    `;
-
-
-    order.positions.forEach(
-        (item, index) => {
-
-            let title =
-                item.product ||
-                item.description ||
-                getCategoryName(
-                    item.type
-                );
-
-
-            html += `
-
-                <div class="orderCard">
-
-                    <strong>
-                        ${index + 1}.
-                        ${escapeHtml(title)}
-                    </strong>
-
-                    <div>
-                        Количество:
-                        ${item.quantity}
-                    </div>
-
-                    <div>
-                        Продажа:
-                        ${item.sale} грн
-                    </div>
-
-                    <div>
-                        Себестоимость:
-                        ${item.cost} грн
-                    </div>
-
-                    <div>
-                        Прибыль:
-                        ${item.profit} грн
-                    </div>
-
-                </div>
-            `;
-        }
-    );
-
-
-    html += `
-
-            <div class="orderCard">
-
-                <strong>
-                    Итого
-                </strong>
-
-                <div>
-                    Продажа:
-                    ${order.totalSale} грн
-                </div>
-
-                <div>
-                    Себестоимость:
-                    ${order.totalCost} грн
-                </div>
-
-                <div>
-                    Прибыль:
-                    ${order.totalProfit} грн
-                </div>
-
-            </div>
-
-        </div>
-    `;
-
-
-    screen.innerHTML =
-        html;
-
-    screen.style.display =
-        "block";
-
-    setActiveNav("Заказы");
-}
-
-
-// ========================================
-// УДАЛЕНИЕ ЗАКАЗА
-// ========================================
-
-function deleteOrder(id) {
+function addCatalogStyles() {
 
     if (
-        !confirm(
-            "Удалить этот заказ?"
+        document.getElementById(
+            "catalog-styles"
         )
     ) {
         return;
     }
 
-
-    const orders =
-        getOrders().filter(
-            order =>
-                order.id !== id
+    const style =
+        document.createElement(
+            "style"
         );
 
+    style.id =
+        "catalog-styles";
 
-    localStorage.setItem(
-        "printOrders",
-        JSON.stringify(
-            orders
-        )
-    );
+    style.textContent = `
+
+        .catalog-screen,
+        .orders-screen,
+        .order-details-screen {
+
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+
+            background: #f5f5f7;
+
+            overflow-y: auto;
+
+            padding:
+                20px
+                16px
+                calc(100px + env(safe-area-inset-bottom));
+
+            -webkit-overflow-scrolling: touch;
+
+        }
 
 
-    openOrders();
+        .catalog-header,
+        .orders-header {
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .catalog-header h2,
+        .orders-header h2 {
+
+            margin: 0;
+            font-size: 25px;
+
+        }
+
+
+        .catalog-close,
+        .orders-close {
+
+            border: none;
+            background: #e5e5ea;
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+
+            font-size: 25px;
+
+        }
+
+
+        .catalog-section {
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 16px;
+
+            margin-bottom: 16px;
+
+            box-shadow:
+                0 2px 10px
+                rgba(0,0,0,.05);
+
+        }
+
+
+        .catalog-section h3 {
+
+            margin:
+                0 0 14px;
+
+            font-size: 18px;
+
+        }
+
+
+        .catalog-product {
+
+            padding:
+                14px 0;
+
+            border-top:
+                1px solid #eee;
+
+        }
+
+
+        .catalog-product:first-of-type {
+
+            border-top: none;
+
+        }
+
+
+        .catalog-product-name {
+
+            font-weight: 600;
+
+            margin-bottom: 12px;
+
+        }
+
+
+        .catalog-tier {
+
+            display: grid;
+
+            grid-template-columns:
+                75px 1fr 1fr;
+
+            gap: 8px;
+
+            align-items: end;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .catalog-tier-name {
+
+            font-size: 13px;
+            color: #666;
+            padding-bottom: 11px;
+
+        }
+
+
+        .catalog-field label {
+
+            display: block;
+
+            font-size: 12px;
+
+            color: #777;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .catalog-field input {
+
+            width: 100%;
+
+            box-sizing: border-box;
+
+            padding: 11px;
+
+            border:
+                1px solid #ddd;
+
+            border-radius: 10px;
+
+            font-size: 16px;
+
+            background: #fafafa;
+
+        }
+
+
+        .catalog-row {
+
+            display: grid;
+
+            grid-template-columns: 1fr;
+
+            gap: 10px;
+
+        }
+
+
+        .catalog-actions {
+
+            margin-top: 18px;
+
+        }
+
+
+        .catalog-save {
+
+            width: 100%;
+
+            border: none;
+
+            border-radius: 14px;
+
+            padding: 14px;
+
+            background: #111;
+
+            color: white;
+
+            font-size: 17px;
+
+            font-weight: 600;
+
+        }
+
+
+        .catalog-reset {
+
+            width: 100%;
+
+            border: none;
+
+            background: transparent;
+
+            padding: 14px;
+
+            color: #d00;
+
+            font-size: 15px;
+
+        }
+
+
+        .catalog-note {
+
+            font-size: 13px;
+
+            color: #777;
+
+            line-height: 1.4;
+
+            margin-bottom: 16px;
+
+        }
+
+
+        /* ---------- ЗАКАЗЫ ---------- */
+
+        .orders-empty {
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 30px 20px;
+
+            text-align: center;
+
+            color: #777;
+
+        }
+
+
+        .order-card {
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 16px;
+
+            margin-bottom: 12px;
+
+            box-shadow:
+                0 2px 10px
+                rgba(0,0,0,.05);
+
+        }
+
+
+        .order-card-top {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .order-card-client {
+
+            font-weight: 700;
+
+            font-size: 17px;
+
+        }
+
+
+        .order-card-date {
+
+            font-size: 12px;
+
+            color: #777;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .order-card-total {
+
+            font-size: 18px;
+
+            font-weight: 700;
+
+            margin-bottom: 4px;
+
+        }
+
+
+        .order-card-profit {
+
+            font-size: 14px;
+
+            color: #555;
+
+            margin-bottom: 14px;
+
+        }
+
+
+        .order-card-buttons {
+
+            display: flex;
+
+            gap: 8px;
+
+        }
+
+
+        .order-view-button {
+
+            flex: 1;
+
+            border: none;
+
+            border-radius: 12px;
+
+            padding: 11px;
+
+            background: #111;
+
+            color: white;
+
+            font-size: 15px;
+
+        }
+
+
+        .order-delete-button {
+
+            border: none;
+
+            border-radius: 12px;
+
+            padding: 11px 15px;
+
+            background: #eee;
+
+            color: #d00;
+
+            font-size: 15px;
+
+        }
+
+
+        /* ---------- ДЕТАЛИ ЗАКАЗА ---------- */
+
+        .details-back {
+
+            border: none;
+
+            background: #e5e5ea;
+
+            border-radius: 12px;
+
+            padding: 10px 15px;
+
+            font-size: 15px;
+
+            margin-bottom: 15px;
+
+        }
+
+
+        .details-card {
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 16px;
+
+            margin-bottom: 14px;
+
+        }
+
+
+        .details-card h3 {
+
+            margin-top: 0;
+
+        }
+
+
+        .details-position {
+
+            border-top: 1px solid #eee;
+
+            padding: 14px 0;
+
+        }
+
+
+        .details-position:first-child {
+
+            border-top: none;
+
+        }
+
+
+        .details-position-name {
+
+            font-weight: 600;
+
+            margin-bottom: 7px;
+
+        }
+
+
+        .details-line {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            margin-top: 5px;
+
+            font-size: 14px;
+
+        }
+
+
+        .details-total {
+
+            font-size: 18px;
+
+            font-weight: 700;
+
+        }
+
+    `;
+
+    document.head.appendChild(style);
+
 }
 
 
-// ========================================
-// ЭКРАН КАТАЛОГА
-// ========================================
+/* =========================================================
+   КАТАЛОГ
+   ========================================================= */
 
 function openCatalog() {
 
-    hideOrderScreen();
+    addCatalogStyles();
 
-    const screen =
-        getExtraScreen();
+    closeOrders();
 
+    closeOrderDetails();
 
-    renderCatalog();
+    const main =
+        document.querySelector("main.container");
 
+    const header =
+        document.querySelector("header.header");
 
-    screen.style.display =
-        "block";
-
-    setActiveNav("Каталог");
-}
-
-
-// ========================================
-// ОТРИСОВКА КАТАЛОГА
-// ========================================
-
-function renderCatalog() {
-
-    const screen =
-        getExtraScreen();
-
-
-    const catalog =
-        loadCatalog();
-
-
-    let html = `
-
-        <div class="catalogScreen">
-
-            <button
-                type="button"
-                class="backToOrder"
-                onclick="showOrderScreen()"
-            >
-                ← Новый заказ
-            </button>
-
-            <h2>
-                Каталог
-            </h2>
-
-            <p>
-                Здесь можно изменить цены.
-            </p>
-
-            <h3>
-                Дипломы
-            </h3>
-    `;
-
-
-    Object.entries(
-        catalog.diplomas
-    ).forEach(
-        ([product, tiers]) => {
-
-            html += `
-
-                <div class="catalogItem">
-
-                    <h4>
-                        ${escapeHtml(product)}
-                    </h4>
-
-                    <div class="tierGrid">
-
-                        ${renderTier(
-                            "1–2",
-                            tiers["1"]
-                        )}
-
-                        ${renderTier(
-                            "3–10",
-                            tiers["3"]
-                        )}
-
-                        ${renderTier(
-                            "11–20",
-                            tiers["11"]
-                        )}
-
-                        ${renderTier(
-                            "21–50",
-                            tiers["21"]
-                        )}
-
-                        ${renderTier(
-                            "50+",
-                            tiers["50"]
-                        )}
-
-                    </div>
-
-                </div>
-            `;
-        }
-    );
-
-
-    html += `
-
-        <h3>
-            Готовые чашки
-        </h3>
-    `;
-
-
-    Object.entries(
-        catalog.readyCups
-    ).forEach(
-        ([product, item]) => {
-
-            html += `
-
-                <div class="catalogItem">
-
-                    <h4>
-                        ${escapeHtml(product)}
-                    </h4>
-
-                    <label>
-                        Цена продажи
-                    </label>
-
-                    <input
-                        type="number"
-                        class="catalogCupSale"
-                        data-product="${escapeHtml(product)}"
-                        value="${item.sale}"
-                    >
-
-                    <label>
-                        Себестоимость
-                    </label>
-
-                    <input
-                        type="number"
-                        class="catalogCupCost"
-                        data-product="${escapeHtml(product)}"
-                        value="${item.cost}"
-                    >
-
-                </div>
-            `;
-        }
-    );
-
-
-    html += `
-
-            <button
-                type="button"
-                id="saveCatalogButton"
-                onclick="saveCatalogFromScreen()"
-            >
-                Сохранить изменения
-            </button>
-
-            <button
-                type="button"
-                id="resetCatalogButton"
-                onclick="resetCatalog()"
-            >
-                Сбросить цены
-            </button>
-
-        </div>
-    `;
-
-
-    screen.innerHTML =
-        html;
-}
-
-
-// ========================================
-// СТРОКА ЦЕНЫ ДИПЛОМА
-// ========================================
-
-function renderTier(
-    name,
-    tier
-) {
-
-    return `
-
-        <div class="catalogTier">
-
-            <strong>
-                ${name}
-            </strong>
-
-            <label>
-                Продажа
-            </label>
-
-            <input
-                type="number"
-                class="catalogSale"
-                value="${tier?.sale ?? 0}"
-            >
-
-            <label>
-                Себестоимость
-            </label>
-
-            <input
-                type="number"
-                class="catalogCost"
-                value="${tier?.cost ?? 0}"
-            >
-
-        </div>
-    `;
-}
-
-
-// ========================================
-// СОХРАНЕНИЕ ЦЕН КАТАЛОГА
-// ========================================
-
-function saveCatalogFromScreen() {
-
-    const catalog =
-        loadCatalog();
-
-
-    const diplomaItems =
-        document.querySelectorAll(
-            "#extraScreen .catalogItem"
-        );
-
-
-    let diplomaIndex = 0;
-
-
-    Object.keys(
-        catalog.diplomas
-    ).forEach(
-        product => {
-
-            const item =
-                diplomaItems[
-                    diplomaIndex
-                ];
-
-
-            if (!item) return;
-
-
-            const saleInputs =
-                item.querySelectorAll(
-                    ".catalogSale"
-                );
-
-            const costInputs =
-                item.querySelectorAll(
-                    ".catalogCost"
-                );
-
-
-            const tiers = [
-                "1",
-                "3",
-                "11",
-                "21",
-                "50"
-            ];
-
-
-            tiers.forEach(
-                (tier, index) => {
-
-                    if (
-                        saleInputs[index]
-                    ) {
-
-                        catalog
-                            .diplomas
-                            [product]
-                            [tier]
-                            .sale =
-                            Number(
-                                saleInputs[
-                                    index
-                                ].value
-                            ) || 0;
-                    }
-
-
-                    if (
-                        costInputs[index]
-                    ) {
-
-                        catalog
-                            .diplomas
-                            [product]
-                            [tier]
-                            .cost =
-                            Number(
-                                costInputs[
-                                    index
-                                ].value
-                            ) || 0;
-                    }
-
-                }
-            );
-
-
-            diplomaIndex++;
-        }
-    );
-
-
-    const cupSales =
-        document.querySelectorAll(
-            "#extraScreen .catalogCupSale"
-        );
-
-    const cupCosts =
-        document.querySelectorAll(
-            "#extraScreen .catalogCupCost"
-        );
-
-
-    cupSales.forEach(
-        input => {
-
-            const product =
-                input.dataset.product;
-
-
-            if (
-                catalog.readyCups[product]
-            ) {
-
-                catalog
-                    .readyCups
-                    [product]
-                    .sale =
-                    Number(
-                        input.value
-                    ) || 0;
-            }
-        }
-    );
-
-
-    cupCosts.forEach(
-        input => {
-
-            const product =
-                input.dataset.product;
-
-
-            if (
-                catalog.readyCups[product]
-            ) {
-
-                catalog
-                    .readyCups
-                    [product]
-                    .cost =
-                    Number(
-                        input.value
-                    ) || 0;
-            }
-        }
-    );
-
-
-    saveCatalog(
-        catalog
-    );
-
-
-    alert(
-        "Цены сохранены!"
-    );
-
-
-    renderCatalog();
-}
-
-
-// ========================================
-// СБРОС ЦЕН
-// ========================================
-
-function resetCatalog() {
-
-    if (
-        !confirm(
-            "Сбросить все цены к исходным?"
-        )
-    ) {
-        return;
+    if (main) {
+        main.style.display = "none";
     }
 
-
-    saveCatalog(
-        JSON.parse(
-            JSON.stringify(
-                DEFAULT_CATALOG
-            )
-        )
-    );
-
-
-    renderCatalog();
-}
-
-
-// ========================================
-// ЭКРАНЫ
-// ========================================
-
-function getExtraScreen() {
+    if (header) {
+        header.style.display = "none";
+    }
 
     let screen =
         document.getElementById(
-            "extraScreen"
+            "catalogScreen"
         );
-
 
     if (!screen) {
 
@@ -2391,74 +1989,1066 @@ function getExtraScreen() {
             );
 
         screen.id =
-            "extraScreen";
+            "catalogScreen";
+
+        screen.className =
+            "catalog-screen";
 
         document.body.appendChild(
             screen
         );
+
     }
 
+    renderCatalog();
 
-    return screen;
+    screen.style.display =
+        "block";
+
+    document.body.style.overflow =
+        "hidden";
+
+    setActiveNav("Каталог");
+
 }
 
 
-function hideExtraScreen() {
+function closeCatalog() {
 
     const screen =
         document.getElementById(
-            "extraScreen"
+            "catalogScreen"
         );
 
+    if (screen) {
+        screen.style.display =
+            "none";
+    }
+
+    document.body.style.overflow =
+        "";
+
+}
+
+
+/* =========================================================
+   ОТОБРАЖЕНИЕ КАТАЛОГА
+   ========================================================= */
+
+function renderCatalog() {
+
+    const screen =
+        document.getElementById(
+            "catalogScreen"
+        );
+
+    if (!screen) {
+        return;
+    }
+
+    let html = `
+
+        <div class="catalog-header">
+
+            <h2>Каталог</h2>
+
+            <button
+                type="button"
+                class="catalog-close"
+                onclick="showOrder()"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="catalog-note">
+
+            Здесь можно менять цены продажи
+            и себестоимость.
+            Изменения сохраняются на этом телефоне
+            и автоматически используются в новых заказах.
+
+        </div>
+
+        <div class="catalog-section">
+
+            <h3>Дипломы</h3>
+
+    `;
+
+
+    Object.keys(
+        catalogNames
+    ).forEach(key => {
+
+        const product =
+            diplomaPrices[key];
+
+        if (!product) {
+            return;
+        }
+
+        html += `
+
+            <div class="catalog-product">
+
+                <div class="catalog-product-name">
+                    ${catalogNames[key]}
+                </div>
+
+        `;
+
+        catalogTiers.forEach(
+            tierInfo => {
+
+                const tier =
+                    tierInfo.key;
+
+                const values =
+                    product[tier];
+
+                if (!values) {
+                    return;
+                }
+
+                html += `
+
+                    <div class="catalog-tier">
+
+                        <div class="catalog-tier-name">
+                            ${tierInfo.label}
+                        </div>
+
+                        <div class="catalog-field">
+
+                            <label>
+                                Продажа
+                            </label>
+
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                data-diploma="${key}"
+                                data-tier="${tier}"
+                                data-type="sale"
+                                value="${values.sale}"
+                            />
+
+                        </div>
+
+                        <div class="catalog-field">
+
+                            <label>
+                                Себестоимость
+                            </label>
+
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                data-diploma="${key}"
+                                data-tier="${tier}"
+                                data-type="cost"
+                                value="${values.cost}"
+                            />
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        );
+
+        html += `</div>`;
+
+    });
+
+
+    html += `
+
+        </div>
+
+        <div class="catalog-section">
+
+            <h3>Готовые чашки</h3>
+
+    `;
+
+
+    Object.keys(
+        readyCups
+    ).forEach(key => {
+
+        const cup =
+            readyCups[key];
+
+        html += `
+
+            <div class="catalog-product">
+
+                <div class="catalog-product-name">
+                    ${cup.name}
+                </div>
+
+                <div class="catalog-row">
+
+                    <div class="catalog-field">
+
+                        <label>
+                            Цена / себестоимость
+                        </label>
+
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            data-cup="${key}"
+                            value="${cup.price}"
+                        />
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+
+    html += `
+
+        </div>
+
+        <div class="catalog-actions">
+
+            <button
+                type="button"
+                class="catalog-save"
+                onclick="saveCatalogFromScreen()"
+            >
+                Сохранить изменения
+            </button>
+
+            <button
+                type="button"
+                class="catalog-reset"
+                onclick="resetCatalog()"
+            >
+                Вернуть цены по умолчанию
+            </button>
+
+        </div>
+
+    `;
+
+    screen.innerHTML =
+        html;
+
+}
+
+
+/* =========================================================
+   СОХРАНЕНИЕ КАТАЛОГА
+   ========================================================= */
+
+function saveCatalogFromScreen() {
+
+    const diplomaInputs =
+        document.querySelectorAll(
+            "#catalogScreen [data-diploma]"
+        );
+
+    diplomaInputs.forEach(
+        input => {
+
+            const key =
+                input.dataset.diploma;
+
+            const tier =
+                input.dataset.tier;
+
+            const type =
+                input.dataset.type;
+
+            const value =
+                Number(
+                    input.value
+                ) || 0;
+
+            if (
+                diplomaPrices[key] &&
+                diplomaPrices[key][tier]
+            ) {
+
+                diplomaPrices[key][tier][type] =
+                    value;
+
+                if (tier === "1") {
+
+                    diplomaPrices[key]["2"][type] =
+                        value;
+
+                }
+
+            }
+
+        }
+    );
+
+
+    const cupInputs =
+        document.querySelectorAll(
+            "#catalogScreen [data-cup]"
+        );
+
+    cupInputs.forEach(
+        input => {
+
+            const key =
+                input.dataset.cup;
+
+            const value =
+                Number(
+                    input.value
+                ) || 0;
+
+            if (readyCups[key]) {
+
+                readyCups[key].price =
+                    value;
+
+            }
+
+        }
+    );
+
+
+    saveCatalog();
+
+    calculateAll();
+
+    alert(
+        "Цены сохранены."
+    );
+
+}
+
+
+/* =========================================================
+   СБРОС КАТАЛОГА
+   ========================================================= */
+
+function resetCatalog() {
+
+    const confirmed =
+        confirm(
+            "Вернуть все цены по умолчанию?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    diplomaPrices =
+        JSON.parse(
+            JSON.stringify(
+                DEFAULT_DIPLOMA_PRICES
+            )
+        );
+
+    readyCups =
+        JSON.parse(
+            JSON.stringify(
+                DEFAULT_READY_CUPS
+            )
+        );
+
+    saveCatalog();
+
+    renderCatalog();
+
+    calculateAll();
+
+    alert(
+        "Цены восстановлены."
+    );
+
+}
+
+
+/* =========================================================
+   ЗАКАЗЫ
+   ========================================================= */
+
+function getOrders() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "orders"
+            ) || "[]"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Ошибка загрузки заказов:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   ОТКРЫТЬ ЗАКАЗЫ
+   ========================================================= */
+
+function openOrders() {
+
+    addCatalogStyles();
+
+    closeCatalog();
+    closeOrderDetails();
+
+    const main =
+        document.querySelector(
+            "main.container"
+        );
+
+    const header =
+        document.querySelector(
+            "header.header"
+        );
+
+    if (main) {
+        main.style.display = "none";
+    }
+
+    if (header) {
+        header.style.display = "none";
+    }
+
+    let screen =
+        document.getElementById(
+            "ordersScreen"
+        );
+
+    if (!screen) {
+
+        screen =
+            document.createElement(
+                "div"
+            );
+
+        screen.id =
+            "ordersScreen";
+
+        screen.className =
+            "orders-screen";
+
+        document.body.appendChild(
+            screen
+        );
+
+    }
+
+    renderOrders();
+
+    screen.style.display =
+        "block";
+
+    document.body.style.overflow =
+        "hidden";
+
+    setActiveNav("Заказы");
+
+}
+
+
+/* =========================================================
+   РЕНДЕР ЗАКАЗОВ
+   ========================================================= */
+
+function renderOrders() {
+
+    const screen =
+        document.getElementById(
+            "ordersScreen"
+        );
+
+    if (!screen) {
+        return;
+    }
+
+    const orders =
+        getOrders();
+
+    let html = `
+
+        <div class="orders-header">
+
+            <h2>Заказы</h2>
+
+            <button
+                type="button"
+                class="orders-close"
+                onclick="showOrder()"
+            >
+                ×
+            </button>
+
+        </div>
+
+    `;
+
+
+    if (orders.length === 0) {
+
+        html += `
+
+            <div class="orders-empty">
+
+                <div style="font-size:40px;">
+                    📋
+                </div>
+
+                <p>
+                    Сохранённых заказов пока нет.
+                </p>
+
+            </div>
+
+        `;
+
+        screen.innerHTML =
+            html;
+
+        return;
+    }
+
+
+    const reversed =
+        [...orders].reverse();
+
+
+    reversed.forEach(
+        order => {
+
+            const client =
+                order.client ||
+                "Без имени";
+
+
+            html += `
+
+                <div class="order-card">
+
+                    <div class="order-card-top">
+
+                        <div class="order-card-client">
+                            ${escapeHtml(client)}
+                        </div>
+
+                    </div>
+
+                    <div class="order-card-date">
+                        ${escapeHtml(order.date || "")}
+                    </div>
+
+                    <div class="order-card-total">
+                        Продажа:
+                        ${escapeHtml(order.totalSale || "0 грн")}
+                    </div>
+
+                    <div class="order-card-profit">
+                        Прибыль:
+                        ${escapeHtml(order.totalProfit || "0 грн")}
+                    </div>
+
+                    <div class="order-card-buttons">
+
+                        <button
+                            type="button"
+                            class="order-view-button"
+                            onclick="openOrderDetails(${order.id})"
+                        >
+                            Открыть
+                        </button>
+
+                        <button
+                            type="button"
+                            class="order-delete-button"
+                            onclick="deleteOrder(${order.id})"
+                        >
+                            Удалить
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    screen.innerHTML =
+        html;
+
+}
+
+
+/* =========================================================
+   ДЕТАЛИ ЗАКАЗА
+   ========================================================= */
+
+function openOrderDetails(orderId) {
+
+    const orders =
+        getOrders();
+
+    const order =
+        orders.find(
+            item =>
+                Number(item.id) ===
+                Number(orderId)
+        );
+
+    if (!order) {
+
+        alert(
+            "Заказ не найден."
+        );
+
+        return;
+    }
+
+
+    const main =
+        document.querySelector(
+            "main.container"
+        );
+
+    const header =
+        document.querySelector(
+            "header.header"
+        );
+
+    if (main) {
+        main.style.display = "none";
+    }
+
+    if (header) {
+        header.style.display = "none";
+    }
+
+
+    const ordersScreen =
+        document.getElementById(
+            "ordersScreen"
+        );
+
+    if (ordersScreen) {
+        ordersScreen.style.display =
+            "none";
+    }
+
+
+    let screen =
+        document.getElementById(
+            "orderDetailsScreen"
+        );
+
+    if (!screen) {
+
+        screen =
+            document.createElement(
+                "div"
+            );
+
+        screen.id =
+            "orderDetailsScreen";
+
+        screen.className =
+            "order-details-screen";
+
+        document.body.appendChild(
+            screen
+        );
+
+    }
+
+
+    let html = `
+
+        <button
+            type="button"
+            class="details-back"
+            onclick="openOrders()"
+        >
+            ← Назад к заказам
+        </button>
+
+        <div class="details-card">
+
+            <h3>
+                ${escapeHtml(
+                    order.client ||
+                    "Без имени"
+                )}
+            </h3>
+
+            <div>
+                Дата:
+                ${escapeHtml(
+                    order.date || ""
+                )}
+            </div>
+
+        </div>
+
+
+        <div class="details-card">
+
+            <h3>
+                Позиции
+            </h3>
+
+    `;
+
+
+    (order.positions || []).forEach(
+        (position, index) => {
+
+            let title =
+                categoryNames[
+                    position.category
+                ] ||
+                position.category ||
+                "Позиция";
+
+
+            if (
+                position.category ===
+                "diploma"
+            ) {
+
+                const diplomaNames = {
+
+                    diploma_uv:
+                        "Диплом УФ",
+
+                    diploma_sub:
+                        "Диплом сублимация"
+
+                };
+
+                title =
+                    diplomaNames[
+                        position.diplomaType
+                    ] ||
+                    "Диплом";
+
+                if (position.diplomaSize) {
+
+                    title +=
+                        ` — ${position.diplomaSize}`;
+
+                }
+
+            }
+
+
+            if (
+                position.category ===
+                "cup_ready"
+            ) {
+
+                title =
+                    readyCups[
+                        position.readyCup
+                    ]?.name ||
+                    "Готовая чашка";
+
+                if (position.cupColor) {
+
+                    title +=
+                        ` — ${position.cupColor}`;
+
+                }
+
+            }
+
+
+            if (
+                position.category ===
+                "cup_custom" &&
+                position.description
+            ) {
+
+                title =
+                    position.description;
+
+            }
+
+
+            if (
+                position.category ===
+                "packaging" &&
+                position.description
+            ) {
+
+                title =
+                    position.description;
+
+            }
+
+
+            html += `
+
+                <div class="details-position">
+
+                    <div class="details-position-name">
+
+                        ${index + 1}.
+                        ${escapeHtml(title)}
+
+                    </div>
+
+                    <div class="details-line">
+
+                        <span>
+                            Количество
+                        </span>
+
+                        <strong>
+                            ${position.quantity || 0} шт.
+                        </strong>
+
+                    </div>
+
+                    <div class="details-line">
+
+                        <span>
+                            Продажа
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(
+                                position.sale ||
+                                "0 грн"
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="details-line">
+
+                        <span>
+                            Себестоимость
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(
+                                position.cost ||
+                                "0 грн"
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="details-line">
+
+                        <span>
+                            Прибыль
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(
+                                position.profit ||
+                                "0 грн"
+                            )}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    html += `
+
+        </div>
+
+
+        <div class="details-card">
+
+            <div class="details-line">
+
+                <span>
+                    Продажа
+                </span>
+
+                <strong class="details-total">
+                    ${escapeHtml(
+                        order.totalSale ||
+                        "0 грн"
+                    )}
+                </strong>
+
+            </div>
+
+            <div class="details-line">
+
+                <span>
+                    Себестоимость
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        order.totalCost ||
+                        "0 грн"
+                    )}
+                </strong>
+
+            </div>
+
+            <div class="details-line">
+
+                <span>
+                    Прибыль
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        order.totalProfit ||
+                        "0 грн"
+                    )}
+                </strong>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    screen.innerHTML =
+        html;
+
+    screen.style.display =
+        "block";
+
+    document.body.style.overflow =
+        "hidden";
+
+    setActiveNav("Заказы");
+
+}
+
+
+/* =========================================================
+   УДАЛЕНИЕ ЗАКАЗА
+   ========================================================= */
+
+function deleteOrder(orderId) {
+
+    const confirmed =
+        confirm(
+            "Удалить этот заказ?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    const orders =
+        getOrders().filter(
+            order =>
+                Number(order.id) !==
+                Number(orderId)
+        );
+
+
+    localStorage.setItem(
+        "orders",
+        JSON.stringify(orders)
+    );
+
+
+    renderOrders();
+
+}
+
+
+/* =========================================================
+   ЗАКРЫТЬ ЭКРАН ЗАКАЗОВ
+   ========================================================= */
+
+function closeOrders() {
+
+    const screen =
+        document.getElementById(
+            "ordersScreen"
+        );
 
     if (screen) {
 
         screen.style.display =
             "none";
+
     }
+
 }
 
 
-// ========================================
-// СКРЫТИЕ ОСНОВНОГО ЭКРАНА
-// ========================================
+/* =========================================================
+   ЗАКРЫТЬ ДЕТАЛИ
+   ========================================================= */
 
-function hideOrderScreen() {
+function closeOrderDetails() {
 
-    const main =
-        document.querySelector(
-            "main.container"
+    const screen =
+        document.getElementById(
+            "orderDetailsScreen"
         );
 
-    const header =
-        document.querySelector(
-            "header.header"
-        );
+    if (screen) {
 
-
-    if (main) {
-
-        main.style.display =
+        screen.style.display =
             "none";
+
     }
 
-
-    if (header) {
-
-        header.style.display =
-            "none";
-    }
 }
 
 
-// ========================================
-// ПОКАЗ ОСНОВНОГО ЭКРАНА
-// ========================================
+/* =========================================================
+   ГЛАВНЫЙ ЭКРАН — НОВЫЙ ЗАКАЗ
+   ========================================================= */
 
 function showOrderScreen() {
 
-    hideExtraScreen();
-
+    closeCatalog();
+    closeOrders();
+    closeOrderDetails();
 
     const main =
         document.querySelector(
@@ -2470,30 +3060,63 @@ function showOrderScreen() {
             "header.header"
         );
 
-
     if (main) {
-
-        main.style.display =
-            "";
+        main.style.display = "";
     }
-
 
     if (header) {
-
-        header.style.display =
-            "";
+        header.style.display = "";
     }
 
+    document.body.style.overflow =
+        "";
 
-    setActiveNav(
-        "Заказ"
-    );
+    setActiveNav("Заказ");
+
+    calculateAll();
+
 }
 
 
-// ========================================
-// АКТИВНАЯ КНОПКА НАВИГАЦИИ
-// ========================================
+/* =========================================================
+   ФУНКЦИИ ДЛЯ INDEX.HTML
+   ========================================================= */
+
+function showOrder() {
+
+    showOrderScreen();
+
+}
+
+
+function showCatalog() {
+
+    openCatalog();
+
+}
+
+
+function showOrders() {
+
+    openOrders();
+
+}
+
+
+function showSettings() {
+
+    setActiveNav("Настройки");
+
+    alert(
+        "Настройки пока находятся в разработке."
+    );
+
+}
+
+
+/* =========================================================
+   АКТИВНАЯ КНОПКА НИЖНЕЙ НАВИГАЦИИ
+   ========================================================= */
 
 function setActiveNav(name) {
 
@@ -2502,361 +3125,69 @@ function setActiveNav(name) {
             ".bottom-nav .nav-item"
         );
 
-
     buttons.forEach(
         button => {
 
             const text =
-                button
-                    .textContent
-                    .trim()
-                    .toLowerCase();
-
-
-            button.classList.toggle(
-                "active",
-                text === name.toLowerCase()
-            );
-        }
-    );
-}
-
-
-// ========================================
-// КНОПКИ ИЗ INDEX.HTML
-// ========================================
-
-function showOrder() {
-
-    showOrderScreen();
-}
-
-
-function showCatalog() {
-
-    openCatalog();
-}
-
-
-function showOrders() {
-
-    openOrders();
-}
-
-
-function showSettings() {
-
-    setActiveNav(
-        "Настройки"
-    );
-
-    alert(
-        "Настройки пока находятся в разработке."
-    );
-}
-
-
-// ========================================
-// НАВИГАЦИЯ
-// ========================================
-
-function setupNavigation() {
-
-    const buttons =
-        document.querySelectorAll(
-            ".bottom-nav .nav-item"
-        );
-
-
-    buttons.forEach(
-        button => {
-
-            const text =
-                button
-                    .textContent
-                    .trim()
-                    .toLowerCase();
-
+                button.textContent
+                    .trim();
 
             if (
-                text.includes("заказ") &&
-                !text.includes("заказы")
+                text.includes(name)
             ) {
 
-                button.onclick =
-                    showOrderScreen;
-            }
+                button.classList.add(
+                    "active"
+                );
 
+            } else {
 
-            else if (
-                text.includes("каталог")
-            ) {
+                button.classList.remove(
+                    "active"
+                );
 
-                button.onclick =
-                    openCatalog;
-            }
-
-
-            else if (
-                text.includes("заказы")
-            ) {
-
-                button.onclick =
-                    openOrders;
-            }
-
-
-            else if (
-                text.includes("настройки")
-            ) {
-
-                button.onclick =
-                    showSettings;
             }
 
         }
     );
+
 }
 
 
-// ========================================
-// НАЗВАНИЕ КАТЕГОРИИ
-// ========================================
-
-function getCategoryName(type) {
-
-    const names = {
-
-        diploma:
-            "Диплом",
-
-        cup_ready:
-            "Готовая чашка",
-
-        cup_print:
-            "Печать чашки",
-
-        cup_custom:
-            "Чашка",
-
-        packaging:
-            "Упаковка для чашки",
-
-        designer:
-            "Услуги дизайнера",
-
-        urgent:
-            "Срочность"
-    };
-
-
-    return (
-        names[type] ||
-        "Позиция"
-    );
-}
-
-
-// ========================================
-// БЕЗОПАСНЫЙ ТЕКСТ
-// ========================================
+/* =========================================================
+   ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ
+   ========================================================= */
 
 function escapeHtml(value) {
 
     return String(value)
-        .replaceAll(
-            "&",
+        .replace(
+            /&/g,
             "&amp;"
         )
-        .replaceAll(
-            "<",
+        .replace(
+            /</g,
             "&lt;"
         )
-        .replaceAll(
-            ">",
+        .replace(
+            />/g,
             "&gt;"
         )
-        .replaceAll(
-            '"',
+        .replace(
+            /"/g,
             "&quot;"
         )
-        .replaceAll(
-            "'",
+        .replace(
+            /'/g,
             "&#039;"
         );
+
 }
 
 
-// ========================================
-// ДОПОЛНИТЕЛЬНЫЕ СТИЛИ
-// ========================================
-
-function addExtraStyles() {
-
-    if (
-        document.getElementById(
-            "extraAppStyles"
-        )
-    ) {
-        return;
-    }
-
-
-    const style =
-        document.createElement(
-            "style"
-        );
-
-
-    style.id =
-        "extraAppStyles";
-
-
-    style.textContent = `
-
-        #extraScreen {
-            display: none;
-            padding: 16px;
-            padding-bottom: 100px;
-        }
-
-        .catalogScreen {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .catalogScreen h2 {
-            margin-top: 10px;
-            margin-bottom: 16px;
-        }
-
-        .catalogScreen h3 {
-            margin-top: 24px;
-        }
-
-        .catalogItem,
-        .orderCard {
-            background: white;
-            border-radius: 16px;
-            padding: 16px;
-            margin: 12px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,.08);
-        }
-
-        .catalogItem h4 {
-            margin-top: 0;
-        }
-
-        .catalogItem input,
-        .catalogScreen input,
-        .catalogScreen select {
-            width: 100%;
-            box-sizing: border-box;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            padding: 11px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            font-size: 16px;
-        }
-
-        .catalogTier {
-            background: #f7f7f7;
-            border-radius: 12px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-
-        .catalogTier strong {
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .catalogTier label {
-            font-size: 13px;
-            display: block;
-        }
-
-        .catalogScreen button {
-            padding: 12px 16px;
-            border: none;
-            border-radius: 12px;
-            margin: 5px 0;
-            font-size: 16px;
-        }
-
-        #saveCatalogButton,
-        #resetCatalogButton {
-            width: 100%;
-        }
-
-        .backToOrder,
-        .backToOrders {
-            background: #eee;
-        }
-
-        .orderTop {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .orderTop span {
-            color: #777;
-            font-size: 13px;
-        }
-
-        .orderMoney {
-            margin-top: 10px;
-        }
-
-        .viewOrder {
-            background: #eee;
-        }
-
-        .deleteOrder {
-            background: #ffe1e1;
-        }
-
-        .emptyOrders {
-            padding: 30px 10px;
-            text-align: center;
-            color: #777;
-        }
-
-    `;
-
-
-    document.head.appendChild(
-        style
-    );
-}
-
-
-// ========================================
-// ЗАПУСК
-// ========================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        addExtraStyles();
-
-        setupNavigation();
-
-        showOrderScreen();
-
-        updateOrderTotals();
-
-    }
-);
-
-
-// ========================================
-// PWA
-// ========================================
+/* =========================================================
+   PWA
+   ========================================================= */
 
 if (
     "serviceWorker" in navigator
@@ -2867,16 +3198,72 @@ if (
         () => {
 
             navigator.serviceWorker
-                .register(
-                    "./sw.js"
+                .register("./sw.js")
+                .then(
+                    registration => {
+
+                        console.log(
+                            "PWA готово",
+                            registration
+                        );
+
+                    }
                 )
                 .catch(
-                    error =>
+                    error => {
+
                         console.log(
-                            "Service Worker:",
+                            "Ошибка PWA:",
                             error
-                        )
+                        );
+
+                    }
                 );
+
         }
     );
+
 }
+
+
+/* =========================================================
+   ЗАПУСК
+   ========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        /*
+           Если позиций ещё нет —
+           создаём первую.
+        */
+
+        const positions =
+            document.getElementById(
+                "positions"
+            );
+
+        if (
+            positions &&
+            positions.querySelectorAll(
+                ".position"
+            ).length === 0
+        ) {
+
+            addPosition();
+
+        }
+
+        calculateAll();
+
+        /*
+           ВАЖНО:
+           не перехватываем кнопки каталога
+           отдельным обработчиком.
+           index.html уже вызывает
+           showCatalog().
+        */
+
+    }
+);
