@@ -8747,3 +8747,631 @@ document.addEventListener(
         );
     }
 );
+
+// =====================================================
+// ОБНОВЛЕНИЕ:
+// 1. ЦВЕТ ОПЛАТЫ В КАРТОЧКЕ ЗАКАЗА
+// 2. ИЗМЕНЕНИЕ ДАТЫ СОЗДАНИЯ ЗАКАЗА
+// =====================================================
+
+
+// =====================================================
+// ЦВЕТ ТЕКСТОВОГО СТАТУСА ОПЛАТЫ В СПИСКЕ ЗАКАЗОВ
+// =====================================================
+
+function applyPaymentTextColors() {
+
+    document
+        .querySelectorAll("#ordersList .order-card")
+        .forEach(card => {
+
+            const elements =
+                Array.from(
+                    card.querySelectorAll(
+                        "div, span, p, b, strong"
+                    )
+                );
+
+
+            elements.forEach(element => {
+
+                const text =
+                    element.textContent
+                        ?.trim()
+                        .toLowerCase() || "";
+
+
+                // Ищем строку оплаты
+                if (
+                    !text.includes("оплата:")
+                ) {
+                    return;
+                }
+
+
+                // Убираем старые классы
+                element.classList.remove(
+                    "payment-text-paid",
+                    "payment-text-partial",
+                    "payment-text-unpaid"
+                );
+
+
+                if (
+                    text.includes(
+                        "не оплачено"
+                    )
+                ) {
+
+                    element.classList.add(
+                        "payment-text-unpaid"
+                    );
+                }
+
+                else if (
+                    text.includes(
+                        "частич"
+                    )
+                    ||
+                    text.includes(
+                        "предоплат"
+                    )
+                ) {
+
+                    element.classList.add(
+                        "payment-text-partial"
+                    );
+                }
+
+                else if (
+                    text.includes(
+                        "оплачено"
+                    )
+                ) {
+
+                    element.classList.add(
+                        "payment-text-paid"
+                    );
+                }
+            });
+        });
+}
+
+
+// =====================================================
+// ДОБАВЛЯЕМ СТИЛИ ОПЛАТЫ
+// =====================================================
+
+function addPaymentTextStyles() {
+
+    if (
+        document.getElementById(
+            "paymentTextStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "paymentTextStyles";
+
+
+    style.textContent = `
+
+        /* Сам текст строки остаётся обычным */
+
+        .payment-text-paid,
+        .payment-text-partial,
+        .payment-text-unpaid {
+            color: inherit;
+        }
+
+
+        /* Красим жирный статус внутри строки */
+
+        .payment-text-paid b,
+        .payment-text-paid strong {
+            color: #25823C !important;
+
+            background:
+                #E4F7E9;
+
+            padding:
+                3px 8px;
+
+            border-radius:
+                8px;
+
+            font-weight:
+                700;
+        }
+
+
+        .payment-text-partial b,
+        .payment-text-partial strong {
+            color: #25823C !important;
+
+            background:
+                #E4F7E9;
+
+            padding:
+                3px 8px;
+
+            border-radius:
+                8px;
+
+            font-weight:
+                700;
+        }
+
+
+        .payment-text-unpaid b,
+        .payment-text-unpaid strong {
+            color: #C93434 !important;
+
+            background:
+                #FFE7E7;
+
+            padding:
+                3px 8px;
+
+            border-radius:
+                8px;
+
+            font-weight:
+                700;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// ПОЛУЧАЕМ ДАТУ ДЛЯ input[type=date]
+// =====================================================
+
+function orderDateToInputValue(timestamp) {
+
+    if (!timestamp) {
+        return "";
+    }
+
+
+    const date =
+        new Date(timestamp);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+
+    const year =
+        date.getFullYear();
+
+
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
+
+
+    const day =
+        String(
+            date.getDate()
+        ).padStart(2, "0");
+
+
+    return `${year}-${month}-${day}`;
+}
+
+
+// =====================================================
+// ПОЛУЧАЕМ ВРЕМЯ ДЛЯ input[type=time]
+// =====================================================
+
+function orderTimeToInputValue(timestamp) {
+
+    if (!timestamp) {
+        return "";
+    }
+
+
+    const date =
+        new Date(timestamp);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+
+    const hours =
+        String(
+            date.getHours()
+        ).padStart(2, "0");
+
+
+    const minutes =
+        String(
+            date.getMinutes()
+        ).padStart(2, "0");
+
+
+    return `${hours}:${minutes}`;
+}
+
+
+// =====================================================
+// СОХРАНЕНИЕ НОВОЙ ДАТЫ СОЗДАНИЯ
+// =====================================================
+
+function saveOrderCreatedDate(id) {
+
+    const dateValue =
+        document.getElementById(
+            "editOrderCreatedDate"
+        )?.value;
+
+
+    const timeValue =
+        document.getElementById(
+            "editOrderCreatedTime"
+        )?.value || "00:00";
+
+
+    if (!dateValue) {
+
+        alert(
+            "Выберите дату заказа."
+        );
+
+        return;
+    }
+
+
+    const newDate =
+        new Date(
+            `${dateValue}T${timeValue}:00`
+        );
+
+
+    if (
+        Number.isNaN(
+            newDate.getTime()
+        )
+    ) {
+
+        alert(
+            "Не удалось сохранить дату."
+        );
+
+        return;
+    }
+
+
+    const orders =
+        getOrders();
+
+
+    const order =
+        orders.find(
+            item =>
+                Number(item.id) ===
+                Number(id)
+        );
+
+
+    if (!order) {
+        return;
+    }
+
+
+    order.createdAt =
+        newDate.getTime();
+
+
+    saveOrders(
+        orders
+    );
+
+
+    renderOrderDetails(
+        order
+    );
+
+
+    renderOrderCards();
+}
+
+
+// =====================================================
+// ДОБАВЛЯЕМ РЕДАКТИРОВАНИЕ ДАТЫ
+// В ОТКРЫТЫЙ ЗАКАЗ
+// =====================================================
+
+function addCreatedDateEditor(order) {
+
+    const content =
+        document.querySelector(
+            "#orderModal .order-modal-content"
+        );
+
+
+    if (!content) {
+        return;
+    }
+
+
+    if (
+        content.querySelector(
+            "#orderCreatedDateEditor"
+        )
+    ) {
+        return;
+    }
+
+
+    const blocks =
+        content.querySelectorAll(
+            ".order-detail-block"
+        );
+
+
+    if (!blocks.length) {
+        return;
+    }
+
+
+    const firstBlock =
+        blocks[0];
+
+
+    const editor =
+        document.createElement(
+            "div"
+        );
+
+
+    editor.id =
+        "orderCreatedDateEditor";
+
+
+    editor.className =
+        "order-detail-block order-created-date-editor";
+
+
+    editor.innerHTML = `
+
+        <div class="detail-section-title">
+            Дата создания заказа
+        </div>
+
+
+        <div class="order-date-grid">
+
+            <div class="field">
+
+                <label>
+                    Дата
+                </label>
+
+                <input
+                    id="editOrderCreatedDate"
+                    type="date"
+                    value="${orderDateToInputValue(
+                        order.createdAt
+                    )}"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Время
+                </label>
+
+                <input
+                    id="editOrderCreatedTime"
+                    type="time"
+                    value="${orderTimeToInputValue(
+                        order.createdAt
+                    )}"
+                >
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="secondary-button"
+            onclick="
+                saveOrderCreatedDate(
+                    ${Number(order.id)}
+                )
+            "
+        >
+            Сохранить дату
+        </button>
+    `;
+
+
+    firstBlock.insertAdjacentElement(
+        "afterend",
+        editor
+    );
+}
+
+
+// =====================================================
+// СТИЛИ РЕДАКТОРА ДАТЫ
+// =====================================================
+
+function addOrderDateEditorStyles() {
+
+    if (
+        document.getElementById(
+            "orderDateEditorStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "orderDateEditorStyles";
+
+
+    style.textContent = `
+
+        .order-date-grid {
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap:
+                10px;
+
+            margin-bottom:
+                10px;
+        }
+
+
+        .order-created-date-editor
+        input {
+
+            width:
+                100%;
+
+            box-sizing:
+                border-box;
+
+            min-height:
+                42px;
+
+            padding:
+                8px 10px;
+
+            border-radius:
+                10px;
+
+            font-size:
+                16px;
+        }
+
+
+        @media
+        (max-width: 380px) {
+
+            .order-date-grid {
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// ОБНОВЛЯЕМ renderOrderCards
+// =====================================================
+
+const _renderOrderCardsPaymentAndDate =
+    renderOrderCards;
+
+
+renderOrderCards = function () {
+
+    _renderOrderCardsPaymentAndDate();
+
+
+    setTimeout(
+        applyPaymentTextColors,
+        0
+    );
+};
+
+
+// =====================================================
+// ОБНОВЛЯЕМ renderOrderDetails
+// =====================================================
+
+const _renderOrderDetailsPaymentAndDate =
+    renderOrderDetails;
+
+
+renderOrderDetails = function (order) {
+
+    _renderOrderDetailsPaymentAndDate(
+        order
+    );
+
+
+    addCreatedDateEditor(
+        order
+    );
+
+
+    setTimeout(
+        applyPaymentTextColors,
+        0
+    );
+};
+
+
+// =====================================================
+// ЗАПУСК
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addPaymentTextStyles();
+
+        addOrderDateEditorStyles();
+
+
+        setTimeout(
+            applyPaymentTextColors,
+            100
+        );
+    }
+);
