@@ -2431,6 +2431,36 @@ function removeOrderPhoto(
 }
 
 
+function openOrderPhoto(photoUrl) {
+    const viewer = document.createElement("div");
+    viewer.id = "photoViewer";
+    viewer.innerHTML = `
+        <div class="photo-viewer-overlay" onclick="closeOrderPhoto()">
+            <button class="photo-viewer-close" onclick="event.stopPropagation(); closeOrderPhoto()">×</button>
+            <img src="${photo.dataUrl}" class="order-photo" onclick="openOrderPhoto('${photo.dataUrl}')">
+        </div>
+    `;
+
+    document.body.appendChild(viewer);
+
+    requestAnimationFrame(() => {
+        viewer.classList.add("active");
+    });
+}
+
+function closeOrderPhoto() {
+    const viewer = document.getElementById("photoViewer");
+
+    if (!viewer) return;
+
+    viewer.classList.remove("active");
+
+    setTimeout(() => {
+        viewer.remove();
+    }, 200);
+}
+
+
 // =====================================================
 // РЕДАКТИРОВАНИЕ ЗАКАЗА
 // =====================================================
