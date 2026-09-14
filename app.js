@@ -354,6 +354,8 @@ function clearPosition(position) {
     if (manualFields) {
         manualFields.innerHTML = "";
     }
+
+    updateOrderTotals();
 }
 
 
@@ -384,102 +386,62 @@ function updateProductOptions(select) {
     manualFields.innerHTML = "";
 
 
-    // ------------------------------------
-    // ДИПЛОМЫ
-    // ------------------------------------
-
     if (type === "diploma") {
 
-        renderDiplomaFields(
-            position
-        );
+        renderDiplomaFields(position);
 
         return;
     }
 
-
-    // ------------------------------------
-    // ГОТОВЫЕ ЧАШКИ
-    // ------------------------------------
 
     if (type === "cup_ready") {
 
-        renderReadyCupFields(
-            position
-        );
+        renderReadyCupFields(position);
 
         return;
     }
 
-
-    // ------------------------------------
-    // ПЕЧАТЬ НА ЧАШКЕ
-    // ------------------------------------
 
     if (type === "cup_print") {
 
-        renderCupPrintFields(
-            position
-        );
+        renderCupPrintFields(position);
 
         return;
     }
 
-
-    // ------------------------------------
-    // ЧАШКА
-    // ------------------------------------
 
     if (type === "cup_custom") {
 
-        renderCustomCupFields(
-            position
-        );
+        renderCustomCupFields(position);
 
         return;
     }
 
-
-    // ------------------------------------
-    // УПАКОВКА
-    // ------------------------------------
 
     if (type === "packaging") {
 
-        renderPackagingFields(
-            position
-        );
+        renderPackagingFields(position);
 
         return;
     }
 
-
-    // ------------------------------------
-    // ДИЗАЙНЕР
-    // ------------------------------------
 
     if (type === "designer") {
 
-        renderDesignerFields(
-            position
-        );
+        renderDesignerFields(position);
 
         return;
     }
 
-
-    // ------------------------------------
-    // СРОЧНОСТЬ
-    // ------------------------------------
 
     if (type === "urgent") {
 
-        renderUrgentFields(
-            position
-        );
+        renderUrgentFields(position);
 
         return;
     }
+
+    updateOrderTotals();
 }
 
 
@@ -691,7 +653,7 @@ function renderReadyCupFields(position) {
             type="number"
             class="sale-input"
             min="0"
-        >
+        />
     `;
 
 
@@ -1015,9 +977,7 @@ function renderUrgentFields(position) {
 function addInputListeners(container) {
 
     container
-        .querySelectorAll(
-            "input"
-        )
+        .querySelectorAll("input")
         .forEach(
             input => {
 
@@ -1097,7 +1057,6 @@ function calculatePosition(position) {
     let cost = 0;
 
 
-    // Дипломы
     if (type === "diploma") {
 
         sale =
@@ -1108,7 +1067,6 @@ function calculatePosition(position) {
     }
 
 
-    // Готовые чашки
     else if (type === "cup_ready") {
 
         const product =
@@ -1131,7 +1089,6 @@ function calculatePosition(position) {
     }
 
 
-    // Печать чашки
     else if (type === "cup_print") {
 
         sale =
@@ -1141,7 +1098,6 @@ function calculatePosition(position) {
     }
 
 
-    // Чашка
     else if (type === "cup_custom") {
 
         sale =
@@ -1152,7 +1108,6 @@ function calculatePosition(position) {
     }
 
 
-    // Упаковка
     else if (type === "packaging") {
 
         sale =
@@ -1163,7 +1118,6 @@ function calculatePosition(position) {
     }
 
 
-    // Дизайнер
     else if (type === "designer") {
 
         sale =
@@ -1173,7 +1127,6 @@ function calculatePosition(position) {
     }
 
 
-    // Срочность
     else if (type === "urgent") {
 
         sale =
@@ -1680,7 +1633,7 @@ function clearOrder() {
 
 function openOrders() {
 
-    hideExtraScreen();
+    hideOrderScreen();
 
     const screen =
         getExtraScreen();
@@ -1814,6 +1767,8 @@ function openOrders() {
 
     screen.style.display =
         "block";
+
+    setActiveNav("Заказы");
 }
 
 
@@ -1832,6 +1787,8 @@ function openOrderDetails(id) {
 
     if (!order) return;
 
+
+    hideOrderScreen();
 
     const screen =
         getExtraScreen();
@@ -1950,6 +1907,8 @@ function openOrderDetails(id) {
 
     screen.style.display =
         "block";
+
+    setActiveNav("Заказы");
 }
 
 
@@ -1993,6 +1952,8 @@ function deleteOrder(id) {
 
 function openCatalog() {
 
+    hideOrderScreen();
+
     const screen =
         getExtraScreen();
 
@@ -2002,6 +1963,8 @@ function openCatalog() {
 
     screen.style.display =
         "block";
+
+    setActiveNav("Каталог");
 }
 
 
@@ -2456,38 +2419,140 @@ function hideExtraScreen() {
 }
 
 
+// ========================================
+// СКРЫТИЕ ОСНОВНОГО ЭКРАНА
+// ========================================
+
+function hideOrderScreen() {
+
+    const main =
+        document.querySelector(
+            "main.container"
+        );
+
+    const header =
+        document.querySelector(
+            "header.header"
+        );
+
+
+    if (main) {
+
+        main.style.display =
+            "none";
+    }
+
+
+    if (header) {
+
+        header.style.display =
+            "none";
+    }
+}
+
+
+// ========================================
+// ПОКАЗ ОСНОВНОГО ЭКРАНА
+// ========================================
+
 function showOrderScreen() {
 
     hideExtraScreen();
 
 
-    const positions =
-        document.getElementById(
-            "positions"
+    const main =
+        document.querySelector(
+            "main.container"
+        );
+
+    const header =
+        document.querySelector(
+            "header.header"
         );
 
 
-    if (positions) {
+    if (main) {
 
-        positions.style.display =
+        main.style.display =
             "";
     }
 
 
-    const client =
-        document.getElementById(
-            "clientName"
+    if (header) {
+
+        header.style.display =
+            "";
+    }
+
+
+    setActiveNav(
+        "Заказ"
+    );
+}
+
+
+// ========================================
+// АКТИВНАЯ КНОПКА НАВИГАЦИИ
+// ========================================
+
+function setActiveNav(name) {
+
+    const buttons =
+        document.querySelectorAll(
+            ".bottom-nav .nav-item"
         );
 
 
-    if (client) {
+    buttons.forEach(
+        button => {
 
-        client.closest(".card")
-            ?.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-    }
+            const text =
+                button
+                    .textContent
+                    .trim()
+                    .toLowerCase();
+
+
+            button.classList.toggle(
+                "active",
+                text === name.toLowerCase()
+            );
+        }
+    );
+}
+
+
+// ========================================
+// КНОПКИ ИЗ INDEX.HTML
+// ========================================
+
+function showOrder() {
+
+    showOrderScreen();
+}
+
+
+function showCatalog() {
+
+    openCatalog();
+}
+
+
+function showOrders() {
+
+    openOrders();
+}
+
+
+function showSettings() {
+
+    setActiveNav(
+        "Настройки"
+    );
+
+    alert(
+        "Настройки пока находятся в разработке."
+    );
 }
 
 
@@ -2546,12 +2611,7 @@ function setupNavigation() {
             ) {
 
                 button.onclick =
-                    () => {
-
-                        alert(
-                            "Настройки пока находятся в разработке."
-                        );
-                    };
+                    showSettings;
             }
 
         }
@@ -2655,6 +2715,7 @@ function addExtraStyles() {
     style.textContent = `
 
         #extraScreen {
+            display: none;
             padding: 16px;
             padding-bottom: 100px;
         }
@@ -2785,6 +2846,8 @@ document.addEventListener(
 
         setupNavigation();
 
+        showOrderScreen();
+
         updateOrderTotals();
 
     }
@@ -2816,23 +2879,4 @@ if (
                 );
         }
     );
-}
-function showOrder() {
-    location.reload();
-}
-
-function showCatalog() {
-    if (typeof renderCatalog === "function") {
-        renderCatalog();
-    }
-}
-
-function showOrders() {
-    if (typeof renderOrders === "function") {
-        renderOrders();
-    }
-}
-
-function showSettings() {
-    alert("Настройки пока находятся в разработке.");
 }
