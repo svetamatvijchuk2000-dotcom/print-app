@@ -9375,3 +9375,257 @@ document.addEventListener(
         );
     }
 );
+
+// =====================================================
+// ИСПРАВЛЕНИЕ ЦВЕТОВ ОПЛАТЫ
+// КРАСИМ ТОЛЬКО САМ СТАТУС ОПЛАТЫ
+// =====================================================
+
+function applyPaymentTextColors() {
+
+    document
+        .querySelectorAll("#ordersList .order-card")
+        .forEach(card => {
+
+            // Сначала полностью очищаем ошибочные классы
+            // со всей карточки и её элементов
+
+            card
+                .querySelectorAll(
+                    ".payment-text-paid, .payment-text-partial, .payment-text-unpaid"
+                )
+                .forEach(element => {
+
+                    element.classList.remove(
+                        "payment-text-paid",
+                        "payment-text-partial",
+                        "payment-text-unpaid"
+                    );
+                });
+
+
+            // Ищем только жирные элементы,
+            // в которых непосредственно находится статус оплаты
+
+            const statusElements =
+                card.querySelectorAll(
+                    "b, strong"
+                );
+
+
+            statusElements.forEach(element => {
+
+                const text =
+                    String(
+                        element.textContent || ""
+                    )
+                    .trim()
+                    .toLowerCase();
+
+
+                // НЕ ОПЛАЧЕНО
+
+                if (
+                    text === "не оплачено"
+                ) {
+
+                    element.classList.add(
+                        "payment-text-unpaid"
+                    );
+
+                    return;
+                }
+
+
+                // ЧАСТИЧНАЯ ПРЕДОПЛАТА
+                // или ЧАСТИЧНО ОПЛАЧЕНО
+
+                if (
+                    text.includes("частич") ||
+                    text.includes("предоплат")
+                ) {
+
+                    element.classList.add(
+                        "payment-text-partial"
+                    );
+
+                    return;
+                }
+
+
+                // ОПЛАЧЕНО
+
+                if (
+                    text === "оплачено"
+                ) {
+
+                    element.classList.add(
+                        "payment-text-paid"
+                    );
+                }
+            });
+        });
+}
+
+
+// =====================================================
+// ИСПРАВЛЕННЫЕ СТИЛИ
+// ТОЛЬКО ДЛЯ СТАТУСА ОПЛАТЫ
+// =====================================================
+
+function addPaymentTextStylesFixed() {
+
+    const oldStyle =
+        document.getElementById(
+            "paymentTextStylesFixed"
+        );
+
+
+    if (oldStyle) {
+        oldStyle.remove();
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "paymentTextStylesFixed";
+
+
+    style.textContent = `
+
+        /* Убираем возможную окраску
+           у обычных элементов карточки */
+
+        #ordersList .order-card {
+            color: inherit;
+        }
+
+
+        /* ОПЛАЧЕНО */
+
+        #ordersList
+        .order-card
+        .payment-text-paid {
+
+            display:
+                inline-block;
+
+            color:
+                #25823C !important;
+
+            background:
+                #E4F7E9 !important;
+
+            padding:
+                3px 8px !important;
+
+            border-radius:
+                8px !important;
+
+            font-weight:
+                700 !important;
+        }
+
+
+        /* ЧАСТИЧНО ОПЛАЧЕНО */
+
+        #ordersList
+        .order-card
+        .payment-text-partial {
+
+            display:
+                inline-block;
+
+            color:
+                #25823C !important;
+
+            background:
+                #E4F7E9 !important;
+
+            padding:
+                3px 8px !important;
+
+            border-radius:
+                8px !important;
+
+            font-weight:
+                700 !important;
+        }
+
+
+        /* НЕ ОПЛАЧЕНО */
+
+        #ordersList
+        .order-card
+        .payment-text-unpaid {
+
+            display:
+                inline-block;
+
+            color:
+                #C93434 !important;
+
+            background:
+                #FFE7E7 !important;
+
+            padding:
+                3px 8px !important;
+
+            border-radius:
+                8px !important;
+
+            font-weight:
+                700 !important;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+// =====================================================
+// ОБНОВЛЕНИЕ ПОСЛЕ ОТРИСОВКИ ЗАКАЗОВ
+// =====================================================
+
+const _renderOrderCardsPaymentFix =
+    renderOrderCards;
+
+
+renderOrderCards = function () {
+
+    _renderOrderCardsPaymentFix();
+
+
+    setTimeout(
+        applyPaymentTextColors,
+        0
+    );
+};
+
+
+// =====================================================
+// ЗАПУСК
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        addPaymentTextStylesFixed();
+
+
+        setTimeout(
+            applyPaymentTextColors,
+            100
+        );
+    }
+);
