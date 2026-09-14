@@ -1,4 +1,4 @@
-const CACHE_NAME = "print-app-v4";
+const CACHE_NAME = "print-app-v5";
 
 const FILES_TO_CACHE = [
     "./",
